@@ -415,6 +415,7 @@ main { min-height: 0; position: relative; }
 .ov-bar .btn { min-height: 2.8rem; padding: 0 1rem; }
 .ov-tools { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
 .ov-tools .btn.on { background: var(--violet); border-color: var(--violet); color: #fff; }
+.sb-badge.warn { color: var(--warn); border-color: rgb(255 196 107 / .4); }
 .sb-badge { font-family: var(--font-mono); font-size: .72rem; color: #8ef0b4; border: 1px solid rgb(142 240 180 / .35); border-radius: 1rem; padding: .25rem .6rem; white-space: nowrap; }
 #ovTube { flex: 1; min-height: 0; display: flex; }
 #ovTube > * { flex: 1; width: 100%; height: 100%; border: 0; }
@@ -700,7 +701,8 @@ main { min-height: 0; position: relative; }
         <div class="panel srow"><div><b>ดาวเคลื่อนไหว</b><span>ปิดเพื่อประหยัดแรงเครื่อง</span></div><button class="switch" role="switch" id="swStars" aria-label="ดาวเคลื่อนไหว"></button></div>
         <div class="panel srow"><div><b>เต็มจอ</b><span>ซ่อนแถบเบราว์เซอร์ ถ้าเบราว์เซอร์อนุญาต</span></div><button class="btn" id="fullBtn"><svg><use href="#i-full"/></svg>เปิดเต็มจอ</button></div>
         <div class="panel srow"><div><b>รีเซ็ตทางลัด</b><span>กลับไปใช้ชุดแอปเริ่มต้น</span></div><button class="btn" id="resetApps">รีเซ็ต</button></div>
-        <div class="panel srow"><div><b>SponsorBlock ใน SmartTube</b><span>ข้ามช่วงโฆษณาสปอนเซอร์ อินโทร และขอกดไลก์ในวิดีโอให้อัตโนมัติ</span></div><button class="switch" role="switch" id="swSb" aria-label="SponsorBlock"></button></div>
+        <div class="panel srow"><div><b>SmartTube ไม่มีโฆษณา</b><span>เล่นวิดีโอจากสตรีมโดยตรงแบบแอป SmartTube ไม่โหลดตัวเล่นและโฆษณาของ YouTube ถ้าคลิปไหนเปิดแบบนี้ไม่ได้จะใช้ตัวเล่น YouTube แทน</span></div><button class="switch" role="switch" id="swAdfree" aria-label="SmartTube ไม่มีโฆษณา"></button></div>
+        <div class="panel srow"><div><b>SponsorBlock ใน SmartTube</b><span>ข้ามช่วงสปอนเซอร์ โปรโมต อินโทร ช่วงจบ และช่วงขอกดไลก์ให้อัตโนมัติ ใช้ข้อมูลจากผู้ใช้ SponsorBlock ทั่วโลก</span></div><button class="switch" role="switch" id="swSb" aria-label="SponsorBlock"></button></div>
         <div class="panel srow"><div><b>คีย์ YouTube API</b><span>ไม่ใส่ก็ได้ ถ้าใส่ SmartTube จะค้นหาผ่าน Google โดยตรงและเสถียรกว่า</span></div><input class="field" id="ytKey" style="max-width:24rem" placeholder="AIza..." autocomplete="off" spellcheck="false"></div>
         <p class="hint" style="padding:0 .5rem">ทางลัดและการตั้งค่าเก็บไว้ในเบราว์เซอร์ของรถคันนี้ ไฟล์เพลงและวิดีโอต้องเลือกใหม่ทุกครั้งที่เปิดหน้า</p>
       </div>
@@ -747,13 +749,14 @@ main { min-height: 0; position: relative; }
   const gradFor = s => SPACE_GRADS[hashOf(s) % SPACE_GRADS.length];
 
   /* ---------- Settings ---------- */
-  const settings = Object.assign({ h24: true, big: false, stars: true, ytKey: '', sb: true, speed: 1 }, store.get('settings', {}));
+  const settings = Object.assign({ h24: true, big: false, stars: true, ytKey: '', sb: true, adfree: true, speed: 1 }, store.get('settings', {}));
   function applySettings() {
     document.documentElement.classList.toggle('big', settings.big);
     $('#sw24').setAttribute('aria-checked', settings.h24);
     $('#swBig').setAttribute('aria-checked', settings.big);
     $('#swStars').setAttribute('aria-checked', settings.stars);
     $('#swSb').setAttribute('aria-checked', settings.sb);
+    $('#swAdfree').setAttribute('aria-checked', settings.adfree);
     store.set('settings', settings);
     tick();
   }
@@ -761,6 +764,7 @@ main { min-height: 0; position: relative; }
   $('#swBig').onclick = () => { settings.big = !settings.big; applySettings(); };
   $('#ytKey').value = settings.ytKey;
   $('#ytKey').addEventListener('change', e => { settings.ytKey = e.target.value.trim(); applySettings(); tubeCache.clear(); toast(settings.ytKey ? 'บันทึกคีย์แล้ว' : 'ลบคีย์แล้ว'); });
+  $('#swAdfree').onclick = () => { settings.adfree = !settings.adfree; applySettings(); };
   $('#swSb').onclick = () => { settings.sb = !settings.sb; applySettings(); };
   $('#swStars').onclick = () => { settings.stars = !settings.stars; applySettings(); };
   $('#fullBtn').onclick = () => {
@@ -1273,11 +1277,136 @@ const GLYPHS = {"playstation":"M8.984 2.596v17.547l3.915 1.261V6.688c0-.69.304-1
     tubeShow(sec.h || sec.n, () => tubeLoad(sec));
   }
 
-  /* SmartTube player: YouTube's IFrame API so SponsorBlock, speed and autoplay-next can drive it. */
+  /* SmartTube player. Like the SmartTube app, videos are played from the raw stream in Tesaro's own <video>,
+     fetched through public Piped / Invidious mirrors, so YouTube's ad player never loads and SponsorBlock can
+     seek precisely. Only when no mirror can stream a video does it fall back to YouTube's embed (which may show ads). */
   const ovTube = $('#ovTube'), ovTools = $('#ovTools');
-  const SB_CATS = ['sponsor', 'selfpromo', 'interaction', 'intro', 'outro', 'music_offtopic'];
+  const SB_CATS = ['sponsor', 'selfpromo', 'interaction', 'intro', 'outro', 'preview', 'music_offtopic'];
+  const SB_NAMES = { sponsor: 'สปอนเซอร์', selfpromo: 'โปรโมตตัวเอง', interaction: 'ขอกดไลก์/ติดตาม', intro: 'อินโทร', outro: 'ช่วงจบ', preview: 'ตัวอย่าง', music_offtopic: 'ช่วงไม่มีเพลง' };
   const SPEEDS = [1, 1.25, 1.5, 1.75, 2, 0.75];
-  let ytApi = null, ytPlayer = null, sbSegs = [], sbTimer = 0, tubeQueue = { list: [], idx: 0 }, playSeq = 0;
+  let ytApi = null, ytPlayer = null, hls = null, sbSegs = [], sbState = 'off', sbTimer = 0, tubeMode = '', streamReady = false, tubeQueue = { list: [], idx: 0 }, playSeq = 0;
+
+  // SponsorBlock: the official API (privacy-preserving hash prefix lookup) raced against Piped's proxies of it.
+  async function sha256Prefix(id) {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(id));
+    return [...new Uint8Array(buf)].slice(0, 2).map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+  async function sbFrom(url, pick) {
+    const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 8000);
+    try {
+      const r = await fetch(url, { signal: ctl.signal });
+      if (r.status === 404) return [];
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return pick(await r.json());
+    } finally { clearTimeout(t); }
+  }
+  async function loadSegments(id, seq) {
+    sbSegs = []; sbState = settings.sb ? 'loading' : 'off'; renderTools();
+    if (!settings.sb) return;
+    const cats = encodeURIComponent(JSON.stringify(SB_CATS));
+    const toSegs = list => (list || []).filter(s => (!s.actionType || s.actionType === 'skip') && s.segment && s.segment[1] > s.segment[0])
+      .map(s => ({ a: s.segment[0], b: s.segment[1], c: s.category }));
+    const jobs = [];
+    try {
+      const pre = await sha256Prefix(id);
+      jobs.push(sbFrom(`https://sponsor.ajay.app/api/skipSegments/${pre}?categories=${cats}`, j => toSegs(((j || []).find(x => x.videoID === id) || {}).segments)));
+    } catch (e) {
+      jobs.push(sbFrom(`https://sponsor.ajay.app/api/skipSegments?videoID=${encodeURIComponent(id)}&categories=${cats}`, toSegs));
+    }
+    PIPED.slice(0, 3).forEach(h => jobs.push(sbFrom(`${h}/sponsors/${encodeURIComponent(id)}?category=${cats}`, j => toSegs(Array.isArray(j) ? j : j.segments))));
+    try {
+      const segs = await Promise.any(jobs);
+      if (seq !== playSeq) return;
+      sbSegs = segs.sort((x, y) => x.a - y.a); sbState = 'ok';
+    } catch (e) { if (seq === playSeq) sbState = 'fail'; }
+    renderTools();
+    sbCheck();
+  }
+  function sbCheck() {
+    if (!sbSegs.length) return;
+    const t = tubeMode === 'stream' ? ovVideo.currentTime : ytPlayer && ytPlayer.getCurrentTime ? ytPlayer.getCurrentTime() : -1;
+    const seg = sbSegs.find(s => t >= s.a - .15 && t < s.b - .3);
+    if (!seg) return;
+    if (tubeMode === 'stream') ovVideo.currentTime = seg.b; else ytPlayer.seekTo(seg.b, true);
+    toast('ข้าม' + (SB_NAMES[seg.c] || 'ช่วงสปอนเซอร์') + 'แล้ว');
+  }
+  ovVideo.addEventListener('timeupdate', () => { if (tubeMode === 'stream') sbCheck(); });
+  ovVideo.addEventListener('loadedmetadata', () => { if (tubeMode === 'stream') { ovVideo.playbackRate = settings.speed || 1; sbCheck(); } });
+  ovVideo.addEventListener('ended', () => { if (tubeMode === 'stream') playQueue(tubeQueue.idx + 1); });
+
+  // Stream sources from the mirrors, in the order they answer.
+  async function pipedStreams(host, id) {
+    const j = await fetchJSON(host + '/streams/' + encodeURIComponent(id), 10000);
+    const out = [];
+    if (j.hls) out.push({ type: 'hls', url: j.hls, q: 'HD' });
+    (j.videoStreams || []).filter(s => s.url && !s.videoOnly && /mp4/i.test(s.mimeType || s.format || ''))
+      .sort((a, b) => (parseInt(b.quality) || 0) - (parseInt(a.quality) || 0)).slice(0, 2).forEach(s => out.push({ type: 'mp4', url: s.url, q: s.quality }));
+    return nonEmpty(out);
+  }
+  async function invStreams(host, id) {
+    const j = await fetchJSON(host + '/api/v1/videos/' + encodeURIComponent(id) + '?local=true', 10000);
+    const abs = u => u.startsWith('/') ? host + u : u;
+    const out = [];
+    if (j.hlsUrl) out.push({ type: 'hls', url: abs(j.hlsUrl), q: 'HD' });
+    (j.formatStreams || []).filter(f => f.url).sort((a, b) => (parseInt(b.resolution) || 0) - (parseInt(a.resolution) || 0))
+      .forEach(f => out.push({ type: 'mp4', url: abs(f.url), q: f.resolution || f.qualityLabel }));
+    return nonEmpty(out);
+  }
+  async function* inOrder(jobs) {
+    const pending = new Map(jobs.map((p, i) => [i, p.then(r => ({ i, r }), e => ({ i, e }))]));
+    while (pending.size) {
+      const x = await Promise.race(pending.values());
+      pending.delete(x.i);
+      if (!x.e) yield x.r;
+    }
+  }
+  function loadHlsLib() {
+    if (window.Hls) return Promise.resolve();
+    const tryLoad = src => new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = rej; document.head.append(s); });
+    return tryLoad('vendor/hls.light.min.js').catch(() => tryLoad('https://cdn.jsdelivr.net/npm/hls.js@1.5.20/dist/hls.light.min.js'));
+  }
+  function resetVideo() {
+    if (hls) { try { hls.destroy(); } catch (e) {} hls = null; }
+    ovVideo.pause(); ovVideo.removeAttribute('src'); ovVideo.load();
+  }
+  // Resolves once the stream has really started (metadata loaded), rejects on error or after a timeout.
+  async function tryStream(c, seq) {
+    resetVideo();
+    const ready = new Promise((res, rej) => {
+      const done = (fn, x) => { clearTimeout(t); ovVideo.removeEventListener('loadedmetadata', ok); ovVideo.removeEventListener('error', bad); fn(x); };
+      const ok = () => done(res), bad = () => done(rej, new Error('media'));
+      const t = setTimeout(() => done(rej, new Error('timeout')), 9000);
+      ovVideo.addEventListener('loadedmetadata', ok); ovVideo.addEventListener('error', bad);
+      c.fail = bad;
+    });
+    if (c.type === 'hls' && !ovVideo.canPlayType('application/vnd.apple.mpegurl')) {
+      await loadHlsLib();
+      if (!window.Hls || !Hls.isSupported()) throw new Error('nohls');
+      hls = new Hls({ maxBufferLength: 30, startLevel: -1 });
+      hls.on(Hls.Events.ERROR, (ev, d) => { if (d.fatal) c.fail(); });
+      hls.loadSource(c.url); hls.attachMedia(ovVideo);
+    } else ovVideo.src = c.url;
+    await ready;
+    if (seq !== playSeq) return false;
+    ovVideo.play().catch(() => {});
+    return true;
+  }
+  async function playStream(v, seq) {
+    const last = store.get('streamSrc', '');
+    const mirrors = PIPED.map(h => ({ key: 'p:' + h, run: () => pipedStreams(h, v.id) }))
+      .concat([...INVIDIOUS, ...extraInvidious].map(h => ({ key: 'i:' + h, run: () => invStreams(h, v.id) })))
+      .sort((a, b) => (b.key === last) - (a.key === last));
+    const deadline = Date.now() + 30000;
+    for await (const r of inOrder(mirrors.map(m => m.run().then(list => ({ key: m.key, list }))))) {
+      for (const c of r.list.slice(0, 2)) {
+        if (seq !== playSeq || Date.now() > deadline) return false;
+        try { if (await tryStream(c, seq)) { store.set('streamSrc', r.key); tubeQuality = c.q || ''; return true; } } catch (e) {}
+      }
+    }
+    return false;
+  }
+  let tubeQuality = '';
+
   function loadYTApi() {
     if (window.YT && YT.Player) return Promise.resolve();
     if (ytApi) return ytApi;
@@ -1292,24 +1421,41 @@ const GLYPHS = {"playstation":"M8.984 2.596v17.547l3.915 1.261V6.688c0-.69.304-1
     ytApi.catch(() => { ytApi = null; });
     return ytApi;
   }
-  async function loadSegments(id, seq) {
-    sbSegs = []; renderTools();
-    if (!settings.sb) return;
+  async function playEmbed(v, seq) {
+    ovVideo.hidden = true; ovTube.hidden = false;
+    ovTube.innerHTML = '<div id="ytHost"></div>';
     try {
-      const r = await fetch('https://sponsor.ajay.app/api/skipSegments?videoID=' + encodeURIComponent(id) + '&categories=' + encodeURIComponent(JSON.stringify(SB_CATS)));
-      if (r.ok && seq === playSeq) { sbSegs = (await r.json()).filter(s => !s.actionType || s.actionType === 'skip').map(s => s.segment); renderTools(); }
-    } catch (e) {}
+      await loadYTApi();
+      if (seq !== playSeq) return;
+      ytPlayer = new YT.Player('ytHost', {
+        host: 'https://www.youtube-nocookie.com', videoId: v.id, width: '100%', height: '100%',
+        playerVars: Object.assign({ autoplay: 1, rel: 0, playsinline: 1, hl: 'th', modestbranding: 1, iv_load_policy: 3 }, v.list ? { list: v.list } : {}),
+        events: {
+          onReady: e => { try { e.target.setPlaybackRate(settings.speed || 1); e.target.playVideo(); } catch (err) {} },
+          onStateChange: e => { if (e.data === 0) playQueue(tubeQueue.idx + 1); }
+        }
+      });
+      sbTimer = setInterval(sbCheck, 500);
+    } catch (e) {
+      if (seq !== playSeq) return;
+      ovTube.innerHTML = `<iframe src="${embedSrc(v.id, v.list)}" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen></iframe>`;
+    }
   }
   function stopTube() {
     clearInterval(sbTimer);
     try { ytPlayer && ytPlayer.destroy(); } catch (e) {}
-    ytPlayer = null; ovTube.innerHTML = ''; ovTube.hidden = true; ovTools.hidden = true;
+    if (tubeMode === 'stream' || hls) resetVideo();
+    ytPlayer = null; tubeMode = ''; ovTube.innerHTML = ''; ovTube.hidden = true; ovTools.hidden = true;
   }
   function renderTools() {
     const v = tubeQueue.list[tubeQueue.idx];
-    if (!v) return;
+    if (!v || ovTools.hidden) return;
     const followed = v.ch && tubeSubs.some(c => c.id === v.ch);
-    ovTools.innerHTML = `${settings.sb ? `<span class="sb-badge" title="SponsorBlock">SponsorBlock · ${sbSegs.length ? 'ข้าม ' + sbSegs.length + ' ช่วง' : 'ไม่มีช่วงโฆษณา'}</span>` : ''}
+    const mode = tubeMode === 'stream' ? (streamReady ? `<span class="sb-badge">ไม่มีโฆษณา${tubeQuality ? ' · ' + esc(tubeQuality) : ''}</span>` : '<span class="sb-badge">กำลังเปิดแบบไม่มีโฆษณา…</span>')
+      : tubeMode === 'embed' ? '<span class="sb-badge warn">โหมด YouTube</span>' : '';
+    const sb = !settings.sb ? '' : `<span class="sb-badge" title="SponsorBlock">SponsorBlock · ${
+      sbState === 'loading' ? 'กำลังโหลด' : sbState === 'fail' ? 'เชื่อมต่อไม่ได้' : sbSegs.length ? 'ข้าม ' + sbSegs.length + ' ช่วง' : 'คลิปนี้ไม่มีช่วงให้ข้าม'}</span>`;
+    ovTools.innerHTML = `${mode}${sb}
       <button class="btn" data-tt="speed">${settings.speed || 1}x</button>
       ${v.ch ? `<button class="btn${followed ? ' on' : ''}" data-tt="follow">${followed ? 'ติดตามแล้ว' : 'ติดตาม'}</button>` : ''}
       ${tubeQueue.idx < tubeQueue.list.length - 1 ? '<button class="btn" data-tt="next"><svg><use href="#i-next"/></svg>ถัดไป</button>' : ''}
@@ -1320,6 +1466,7 @@ const GLYPHS = {"playstation":"M8.984 2.596v17.547l3.915 1.261V6.688c0-.69.304-1
     const v = tubeQueue.list[tubeQueue.idx];
     if (b.dataset.tt === 'speed') {
       settings.speed = SPEEDS[(SPEEDS.indexOf(settings.speed || 1) + 1) % SPEEDS.length]; applySettings();
+      if (tubeMode === 'stream') ovVideo.playbackRate = settings.speed;
       try { ytPlayer && ytPlayer.setPlaybackRate(settings.speed); } catch (err) {}
     } else if (b.dataset.tt === 'follow') {
       if (tubeSubs.some(c => c.id === v.ch)) { tubeSubs = tubeSubs.filter(c => c.id !== v.ch); toast('เลิกติดตาม ' + v.author); }
@@ -1334,34 +1481,21 @@ const GLYPHS = {"playstation":"M8.984 2.596v17.547l3.915 1.261V6.688c0-.69.304-1
     tubeLists.hist = [v, ...tubeLists.hist.filter(x => x.id !== v.id)].slice(0, 40);
     store.set('tubeHist', tubeLists.hist); renderTubeHist(); renderStNav();
     if (ov.hidden) openOverlay(v.title || 'SmartTube'); else $('#ovTitle').textContent = v.title || 'SmartTube';
-    ovVideo.pause(); ovVideo.hidden = true; ovFrame.hidden = true; ovFrame.src = 'about:blank';
-    clearInterval(sbTimer); try { ytPlayer && ytPlayer.destroy(); } catch (e) {} ytPlayer = null;
-    ovTube.hidden = false; ovTools.hidden = false;
-    ovTube.innerHTML = '<div id="ytHost"></div>';
+    stopTube();
+    ovFrame.hidden = true; ovFrame.src = 'about:blank';
+    ovTools.hidden = false; tubeQuality = '';
     loadSegments(v.id, seq);
-    try {
-      await loadYTApi();
+    if (settings.adfree && !v.list) {
+      tubeMode = 'stream'; streamReady = false; ovVideo.hidden = false; renderTools();
+      const ok = await playStream(v, seq);
       if (seq !== playSeq) return;
-      ytPlayer = new YT.Player('ytHost', {
-        host: 'https://www.youtube-nocookie.com', videoId: v.id, width: '100%', height: '100%',
-        playerVars: Object.assign({ autoplay: 1, rel: 0, playsinline: 1, hl: 'th', modestbranding: 1, iv_load_policy: 3 }, v.list ? { list: v.list } : {}),
-        events: {
-          onReady: e => { try { e.target.setPlaybackRate(settings.speed || 1); e.target.playVideo(); } catch (err) {} },
-          onStateChange: e => { if (e.data === 0 && tubeQueue.idx < tubeQueue.list.length - 1) playQueue(tubeQueue.idx + 1); }
-        }
-      });
-      sbTimer = setInterval(() => {
-        if (!ytPlayer || !ytPlayer.getCurrentTime || !sbSegs.length) return;
-        const t = ytPlayer.getCurrentTime();
-        const seg = sbSegs.find(([a, b]) => t >= a && t < b - .4);
-        if (seg) { ytPlayer.seekTo(seg[1], true); toast('ข้ามช่วงสปอนเซอร์แล้ว'); }
-      }, 600);
-    } catch (e) {
-      // IFrame API blocked or slow: plain embed still plays, just without auto-skip.
-      if (seq !== playSeq) return;
-      ovTube.innerHTML = `<iframe src="${embedSrc(v.id, v.list)}" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen></iframe>`;
+      if (ok) { streamReady = true; renderTools(); return; }
+      resetVideo();
+      toast('คลิปนี้เปิดแบบไม่มีโฆษณาไม่ได้ เลยเปิดด้วยตัวเล่นของ YouTube แทน');
     }
+    tubeMode = 'embed';
     renderTools();
+    playEmbed(v, seq);
   }
   const playQueue = i => { const v = tubeQueue.list[i]; if (v) playTube(v, tubeQueue.list, i); };
 
