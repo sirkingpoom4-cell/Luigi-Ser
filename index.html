@@ -132,6 +132,7 @@ b){(new g(a)).read(b)},Reader:g,Config:q}},{"./ArrayFileReader":3,"./BlobFileRea
 
 </script>
 <style>
+[hidden] { display: none !important; }
 /* Layout: Android TV / streaming-app shell. A slim top bar with pill tabs floats over a starfield; each tab is a vertical page of
    horizontal card rails, opened by a planet-horizon hero. Single deep-space look (dark only), built for a car display. */
 :root {
@@ -415,6 +416,9 @@ main { min-height: 0; position: relative; }
 .ov-bar .btn { min-height: 2.8rem; padding: 0 1rem; }
 .ov-tools { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
 .ov-tools .btn.on { background: var(--violet); border-color: var(--violet); color: #fff; }
+.mini .ctl.watch { display: flex; align-items: center; width: auto; padding: 0 1rem; gap: .45rem; border-radius: 2rem; background: var(--violet); color: #fff; font-size: .9rem; }
+.mini .ctl.watch b { font-weight: 500; white-space: nowrap; }
+.player .watch { width: 100%; justify-content: center; }
 .sb-badge.warn { color: var(--warn); border-color: rgb(255 196 107 / .4); }
 .sb-badge { font-family: var(--font-mono); font-size: .72rem; color: #8ef0b4; border: 1px solid rgb(142 240 180 / .35); border-radius: 1rem; padding: .25rem .6rem; white-space: nowrap; }
 #ovTube { flex: 1; min-height: 0; display: flex; }
@@ -643,6 +647,7 @@ main { min-height: 0; position: relative; }
             <button class="ctl play" data-act="toggle" aria-label="เล่นหรือหยุด"><svg><use href="#i-play" data-bind="playicon"/></svg></button>
             <button class="ctl" data-act="next" aria-label="ถัดไป"><svg><use href="#i-next"/></svg></button>
           </div>
+          <button class="btn primary watch" data-act="watch" hidden><svg><use href="#i-movie"/></svg>ดูภาพต่อ (ตอนจอด)</button>
         </div>
         <div style="min-width:0">
           <section class="row" style="margin-top:0">
@@ -716,6 +721,7 @@ main { min-height: 0; position: relative; }
   <span class="ctl" data-act="prev" role="button" aria-label="ก่อนหน้า"><svg><use href="#i-prev"/></svg></span>
   <span class="ctl play" data-act="toggle" role="button" aria-label="เล่นหรือหยุด"><svg><use href="#i-play" data-bind="playicon"/></svg></span>
   <span class="ctl" data-act="next" role="button" aria-label="ถัดไป"><svg><use href="#i-next"/></svg></span>
+  <span class="ctl watch" data-act="watch" role="button" aria-label="ดูภาพต่อ" hidden><svg><use href="#i-movie"/></svg><b>ดูภาพต่อ</b></span>
 </div>
 <div class="overlay" id="overlay" hidden>
   <div class="ov-bar">
@@ -1421,7 +1427,7 @@ const GLYPHS = {"playstation":"M8.984 2.596v17.547l3.915 1.261V6.688c0-.69.304-1
     ytApi.catch(() => { ytApi = null; });
     return ytApi;
   }
-  async function playEmbed(v, seq) {
+  async function playEmbed(v, seq, startAt = 0) {
     ovVideo.hidden = true; ovTube.hidden = false;
     ovTube.innerHTML = '<div id="ytHost"></div>';
     try {
@@ -1429,7 +1435,7 @@ const GLYPHS = {"playstation":"M8.984 2.596v17.547l3.915 1.261V6.688c0-.69.304-1
       if (seq !== playSeq) return;
       ytPlayer = new YT.Player('ytHost', {
         host: 'https://www.youtube-nocookie.com', videoId: v.id, width: '100%', height: '100%',
-        playerVars: Object.assign({ autoplay: 1, rel: 0, playsinline: 1, hl: 'th', modestbranding: 1, iv_load_policy: 3 }, v.list ? { list: v.list } : {}),
+        playerVars: Object.assign({ autoplay: 1, rel: 0, playsinline: 1, hl: 'th', modestbranding: 1, iv_load_policy: 3, start: Math.floor(startAt) }, v.list ? { list: v.list } : {}),
         events: {
           onReady: e => { try { e.target.setPlaybackRate(settings.speed || 1); e.target.playVideo(); } catch (err) {} },
           onStateChange: e => { if (e.data === 0) playQueue(tubeQueue.idx + 1); }
@@ -1456,6 +1462,7 @@ const GLYPHS = {"playstation":"M8.984 2.596v17.547l3.915 1.261V6.688c0-.69.304-1
     const sb = !settings.sb ? '' : `<span class="sb-badge" title="SponsorBlock">SponsorBlock · ${
       sbState === 'loading' ? 'กำลังโหลด' : sbState === 'fail' ? 'เชื่อมต่อไม่ได้' : sbSegs.length ? 'ข้าม ' + sbSegs.length + ' ช่วง' : 'คลิปนี้ไม่มีช่วงให้ข้าม'}</span>`;
     ovTools.innerHTML = `${mode}${sb}
+      <button class="btn primary" data-tt="listen"><svg><use href="#i-music"/></svg>ฟังเสียงตอนขับ</button>
       <button class="btn" data-tt="speed">${settings.speed || 1}x</button>
       ${v.ch ? `<button class="btn${followed ? ' on' : ''}" data-tt="follow">${followed ? 'ติดตามแล้ว' : 'ติดตาม'}</button>` : ''}
       ${tubeQueue.idx < tubeQueue.list.length - 1 ? '<button class="btn" data-tt="next"><svg><use href="#i-next"/></svg>ถัดไป</button>' : ''}
@@ -1473,10 +1480,11 @@ const GLYPHS = {"playstation":"M8.984 2.596v17.547l3.915 1.261V6.688c0-.69.304-1
       else { tubeSubs = [{ id: v.ch, name: v.author || 'ช่อง' }, ...tubeSubs]; toast('ติดตาม ' + (v.author || 'ช่องนี้') + ' แล้ว'); }
       store.set('tubeSubs', tubeSubs); renderStNav();
     } else if (b.dataset.tt === 'next') playQueue(tubeQueue.idx + 1);
+    else if (b.dataset.tt === 'listen') { switchToListen(); return; }
     renderTools();
   });
-  async function playTube(v, list = [v], idx = 0) {
-    tubeQueue = { list, idx };
+  async function playTube(v, list = [v], idx = 0, startAt = 0) {
+    tubeQueue = { list, idx }; frozenHandled = false;
     const seq = ++playSeq;
     tubeLists.hist = [v, ...tubeLists.hist.filter(x => x.id !== v.id)].slice(0, 40);
     store.set('tubeHist', tubeLists.hist); renderTubeHist(); renderStNav();
@@ -1489,15 +1497,104 @@ const GLYPHS = {"playstation":"M8.984 2.596v17.547l3.915 1.261V6.688c0-.69.304-1
       tubeMode = 'stream'; streamReady = false; ovVideo.hidden = false; renderTools();
       const ok = await playStream(v, seq);
       if (seq !== playSeq) return;
-      if (ok) { streamReady = true; renderTools(); return; }
+      if (ok) { streamReady = true; if (startAt > 1) ovVideo.currentTime = startAt; renderTools(); return; }
       resetVideo();
       toast('คลิปนี้เปิดแบบไม่มีโฆษณาไม่ได้ เลยเปิดด้วยตัวเล่นของ YouTube แทน');
     }
     tubeMode = 'embed';
     renderTools();
-    playEmbed(v, seq);
+    playEmbed(v, seq, startAt);
   }
   const playQueue = i => { const v = tubeQueue.list[i]; if (v) playTube(v, tubeQueue.list, i); };
+
+  /* Listen mode. Tesla deliberately freezes browser video while the car is in gear (a driver-safety lock that
+     Tesaro respects), so for driving SmartTube carries on as audio in the music player at the bottom, with
+     SponsorBlock still skipping, and the video picks up again from the same second once parked. */
+  async function pipedAudio(host, id) {
+    const j = await fetchJSON(host + '/streams/' + encodeURIComponent(id), 10000);
+    const aud = (j.audioStreams || []).filter(a => a.url && /mp4|m4a/i.test(a.mimeType || a.format || '')).sort((a, b) => (b.bitrate || 0) - (a.bitrate || 0));
+    const mux = (j.videoStreams || []).filter(s => s.url && !s.videoOnly && /mp4/i.test(s.mimeType || s.format || ''));
+    return nonEmpty(aud.concat(mux).map(a => a.url));
+  }
+  async function invAudio(host, id) {
+    const j = await fetchJSON(host + '/api/v1/videos/' + encodeURIComponent(id) + '?local=true', 10000);
+    const abs = u => u.startsWith('/') ? host + u : u;
+    const aud = (j.adaptiveFormats || []).filter(f => f.url && /^audio\/mp4/.test(f.type || '')).sort((a, b) => (+b.bitrate || 0) - (+a.bitrate || 0));
+    return nonEmpty(aud.concat((j.formatStreams || []).filter(f => f.url)).map(f => abs(f.url)));
+  }
+  function tryAudio(url, seq) {
+    return new Promise((res, rej) => {
+      const done = (fn, x) => { clearTimeout(t); audio.removeEventListener('loadedmetadata', ok); audio.removeEventListener('error', bad); fn(x); };
+      const ok = () => done(res, seq === listenSeq), bad = () => done(rej, new Error('media'));
+      const t = setTimeout(() => done(rej, new Error('timeout')), 9000);
+      audio.addEventListener('loadedmetadata', ok); audio.addEventListener('error', bad);
+      audio.preload = 'auto'; // the player element defaults to preload=none, which never fires loadedmetadata
+      audio.src = url; audio.load();
+    });
+  }
+  let listenSeq = 0;
+  async function listenTube(v, startAt = 0, quiet = false) {
+    const seq = ++listenSeq, pseq = ++playSeq;
+    now = { name: v.title || 'SmartTube', artist: v.author || 'YouTube', tube: v, art: 'https://i.ytimg.com/vi/' + encodeURIComponent(v.id) + '/hqdefault.jpg' };
+    audio.pause(); renderMedia();
+    if (!quiet) toast('กำลังเปิดแบบฟังเสียง');
+    loadSegments(v.id, pseq);
+    const last = store.get('streamSrc', '');
+    const mirrors = PIPED.map(h => ({ key: 'p:' + h, run: () => pipedAudio(h, v.id) }))
+      .concat([...INVIDIOUS, ...extraInvidious].map(h => ({ key: 'i:' + h, run: () => invAudio(h, v.id) })))
+      .sort((a, b) => (b.key === last) - (a.key === last));
+    for await (const r of inOrder(mirrors.map(m => m.run().then(list => ({ key: m.key, list }))))) {
+      for (const url of r.list.slice(0, 2)) {
+        if (seq !== listenSeq) return;
+        try {
+          if (await tryAudio(url, seq)) {
+            store.set('streamSrc', r.key);
+            if (startAt > 1) audio.currentTime = startAt;
+            audio.playbackRate = settings.speed || 1;
+            audio.play().catch(() => {});
+            renderMedia(); return;
+          }
+        } catch (e) {}
+      }
+    }
+    if (seq === listenSeq) toast('เปิดเสียงคลิปนี้ไม่ได้ตอนนี้ ลองคลิปถัดไป');
+  }
+  function listenStep(d) {
+    const i = tubeQueue.idx + d, v = tubeQueue.list[i];
+    if (!v) { toast(d > 0 ? 'หมดคิวแล้ว' : 'นี่คือคลิปแรก'); return; }
+    tubeQueue.idx = i; listenTube(v);
+  }
+  // Hooked up at boot, once the audio player below exists.
+  const hookListenAudio = () => audio.addEventListener('timeupdate', () => {
+    if (!now || !now.tube || !sbSegs.length) return;
+    const t = audio.currentTime, seg = sbSegs.find(s => t >= s.a - .15 && t < s.b - .3);
+    if (seg) { audio.currentTime = seg.b; toast('ข้าม' + (SB_NAMES[seg.c] || 'ช่วงสปอนเซอร์') + 'แล้ว'); }
+  });
+  function switchToListen(reason) {
+    const v = tubeQueue.list[tubeQueue.idx]; if (!v) return;
+    const t = tubeMode === 'stream' ? ovVideo.currentTime : ytPlayer && ytPlayer.getCurrentTime ? ytPlayer.getCurrentTime() : 0;
+    resumeAudio = false; closeOverlay();
+    if (reason) toast(reason);
+    listenTube(v, t, !!reason);
+  }
+  function watchAgain() {
+    if (!now || !now.tube) return;
+    const v = now.tube, t = audio.currentTime;
+    ++listenSeq; audio.pause();
+    playTube(v, tubeQueue.list.some(x => x.id === v.id) ? tubeQueue.list : [v], Math.max(0, tubeQueue.list.findIndex(x => x.id === v.id)), t);
+  }
+  // Frozen-picture detector: frames stop arriving while the clock keeps running = the car is in gear.
+  let lastFrameAt = 0, frozenHandled = false;
+  function watchFrames() {
+    if (!('requestVideoFrameCallback' in ovVideo)) return;
+    const cb = () => { lastFrameAt = performance.now(); if (tubeMode === 'stream') ovVideo.requestVideoFrameCallback(cb); };
+    ovVideo.requestVideoFrameCallback(cb);
+  }
+  ovVideo.addEventListener('playing', () => { if (tubeMode === 'stream') { lastFrameAt = performance.now(); watchFrames(); } });
+  setInterval(() => {
+    if (tubeMode !== 'stream' || !streamReady || frozenHandled || ovVideo.paused || document.hidden || ovVideo.readyState < 3 || !lastFrameAt) return;
+    if (performance.now() - lastFrameAt > 3500) { frozenHandled = true; switchToListen('รถเข้าเกียร์แล้ว Tesla พักภาพไว้ เล่นต่อเป็นเสียงให้แล้ว จอดแล้วกดปุ่มดูภาพต่อได้'); }
+  }, 1000);
 
   $('#tubeForm').addEventListener('submit', e => {
     e.preventDefault();
@@ -1549,10 +1646,11 @@ const GLYPHS = {"playstation":"M8.984 2.596v17.547l3.915 1.261V6.688c0-.69.304-1
   const fmt = s => isFinite(s) ? Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0') : '0:00';
   function renderMedia() {
     $('#mini').hidden = !now;
+    $$('[data-act="watch"]').forEach(e => e.hidden = !(now && now.tube));
     $$('[data-art]').forEach(e => { const a = now && now.art; e.classList.toggle('has-img', !!a); e.style.backgroundImage = a ? 'url("' + a + '")' : ''; });
     $$('[data-bind="title"]').forEach(e => e.textContent = now ? now.name : 'ยังไม่ได้เล่นอะไร');
     $$('[data-bind="sub"]').forEach(e => e.textContent = !now ? 'เลือกสถานีวิทยุ หรือเพิ่มไฟล์เพลง'
-      : now.live ? 'วิทยุออนไลน์ · ' + now.sub : (now.artist ? now.artist + ' · ' : '') + `เพลงที่ ${qIdx + 1} จาก ${queue.length}`);
+      : now.tube ? 'SmartTube · ฟังเสียง · ' + (now.artist || '') : now.live ? 'วิทยุออนไลน์ · ' + now.sub : (now.artist ? now.artist + ' · ' : '') + `เพลงที่ ${qIdx + 1} จาก ${queue.length}`);
     $$('[data-bind="playicon"]').forEach(e => e.setAttribute('href', audio.paused ? '#i-play' : '#i-pause'));
     $('#playlist').innerHTML = queue.length
       ? queue.map((q, i) => `<button class="list-item${now === q ? ' active' : ''}" data-track="${i}"><svg><use href="#i-music"/></svg><span class="grow">${esc(q.name)}</span><span class="km">${esc(q.artist || '')}</span></button>`).join('')
@@ -1595,13 +1693,14 @@ const GLYPHS = {"playstation":"M8.984 2.596v17.547l3.915 1.261V6.688c0-.69.304-1
     if (!now || now.live) playTrack(start); else renderMedia();
     e.target.value = '';
   });
-  const step = d => now && now.live ? playRadio(radioIdx + d) : playTrack(qIdx + d);
+  const step = d => now && now.tube ? listenStep(d) : now && now.live ? playRadio(radioIdx + d) : playTrack(qIdx + d);
   document.addEventListener('click', e => {
     const b = e.target.closest('[data-act]');
     if (b) {
       e.stopPropagation();
       if (!now) { go('music'); toast('เลือกสถานีวิทยุ หรือเพิ่มเพลงก่อน'); return; }
       if (b.dataset.act === 'toggle') audio.paused ? audio.play().catch(() => {}) : audio.pause();
+      if (b.dataset.act === 'watch') { watchAgain(); return; }
       if (b.dataset.act === 'next') step(1);
       if (b.dataset.act === 'prev') (!now.live && audio.currentTime > 3) ? (audio.currentTime = 0) : step(-1);
       return;
@@ -1621,7 +1720,7 @@ const GLYPHS = {"playstation":"M8.984 2.596v17.547l3.915 1.261V6.688c0-.69.304-1
     $$('[data-bind="dur"]').forEach(e => e.textContent = live ? 'LIVE' : fmt(audio.duration));
   });
   ['play', 'pause'].forEach(ev => audio.addEventListener(ev, renderMedia));
-  audio.addEventListener('ended', () => { if (now && !now.live) playTrack(qIdx + 1); });
+  audio.addEventListener('ended', () => { if (now && now.tube) listenStep(1); else if (now && !now.live) playTrack(qIdx + 1); });
   if ('mediaSession' in navigator) {
     try {
       navigator.mediaSession.setActionHandler('nexttrack', () => step(1));
@@ -1968,7 +2067,7 @@ const GLYPHS = {"playstation":"M8.984 2.596v17.547l3.915 1.261V6.688c0-.69.304-1
 
   /* ---------- Boot ---------- */
   applySettings();
-  renderCatalogue(); renderApps(); renderMedia(); showHero(0); loadRadio();
+  hookListenAudio(); renderCatalogue(); renderApps(); renderMedia(); showHero(0); loadRadio();
   const startView = store.get('view', 'home');
   go(['home', 'movies', 'tube', 'music', 'games', 'apps'].includes(startView) ? startView : 'home');
   try { navigator.wakeLock && navigator.wakeLock.request('screen').catch(() => {}); } catch (e) {}
