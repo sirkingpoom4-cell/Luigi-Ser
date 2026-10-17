@@ -513,16 +513,14 @@ main { min-height: 0; position: relative; }
     </div>
     <nav class="tabs" aria-label="เมนูหลัก">
       <button class="tab" data-go="home" aria-current="page"><svg><use href="#i-home"/></svg>หน้าแรก</button>
-      <button class="tab" data-go="movies"><svg><use href="#i-movie"/></svg>หนัง</button>
       <button class="tab" data-go="tube"><svg><use href="#i-play"/></svg>SmartTube</button>
-      <button class="tab" data-go="music"><svg><use href="#i-music"/></svg>เพลง</button>
-      <button class="tab" data-go="games"><svg><use href="#i-game"/></svg>เกม</button>
       <button class="tab" data-go="apps"><svg><use href="#i-apps"/></svg>แอป</button>
+      <button class="tab" data-go="games"><svg><use href="#i-game"/></svg>เกม</button>
+      <button class="tab" data-go="settings"><svg><use href="#i-gear"/></svg>การตั้งค่า</button>
     </nav>
     <div class="status">
       <div class="wx"><b id="wTemp">--°</b><span id="wDesc">อากาศ</span></div>
       <div class="clock" id="clock">--:--</div>
-      <button class="icon-btn" data-go="settings" aria-label="ตั้งค่า"><svg class="i"><use href="#i-gear"/></svg></button>
     </div>
   </header>
 
@@ -823,7 +821,8 @@ main { min-height: 0; position: relative; }
   function go(view) {
     current = view;
     $$('.view').forEach(v => v.hidden = v.dataset.view !== view);
-    $$('[data-go]').forEach(b => { if (b.closest('.tabs, .status')) b.dataset.go === view ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current'); });
+    const tab = view === 'movies' || view === 'music' ? 'home' : view;
+    $$('.tabs [data-go]').forEach(b => b.dataset.go === tab ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current'));
     if (view === 'tube') tubeEnter();
     store.set('view', view === 'settings' ? 'home' : view);
   }
