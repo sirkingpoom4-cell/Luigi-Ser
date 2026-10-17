@@ -1,0 +1,716 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0b0d10">
+<style>*,*::before,*::after{box-sizing:border-box}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Android Car Web</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,400;8..144,500;8..144,650&family=Noto+Sans+Thai:wght@400;500;650&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<style>
+/* Layout: Android Auto "split screen" — slim nav rail on the left, a large map card, and a stacked side column (clock, media, shortcuts). Single dark look, built for a car display. */
+:root {
+  --bg: #0b0d10;
+  --surface: #171a1f;
+  --surface-2: #22262d;
+  --line: #2c313a;
+  --fg: #e8eaee;
+  --muted: #9aa1ad;
+  --accent: #8ab4f8;
+  --accent-ink: #0b1a33;
+  --ok: #7fd39b;
+  --warn: #f2c26b;
+  --font-ui: "Roboto Flex", "Noto Sans Thai", system-ui, sans-serif;
+  --font-num: "Roboto Flex", "Noto Sans Thai", system-ui, sans-serif;
+  --r-lg: 1.5rem;
+  --r-md: 1.1rem;
+  color-scheme: dark;
+}
+html { font-size: clamp(14px, 1.05vw, 20px); height: 100%; }
+html.big { font-size: clamp(16px, 1.25vw, 24px); }
+body {
+  height: 100%; background: var(--bg); color: var(--fg);
+  font-family: var(--font-ui); overflow: hidden;
+  -webkit-tap-highlight-color: transparent; user-select: none;
+}
+button, input, a { font: inherit; color: inherit; }
+button { background: none; border: 0; cursor: pointer; }
+a { text-decoration: none; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+svg.i { width: 1.75rem; height: 1.75rem; fill: currentColor; flex: none; }
+
+.shell {
+  height: 100%; display: grid; grid-template-columns: 6.25rem minmax(0, 1fr); gap: .75rem;
+  padding-block: .75rem;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+
+/* Nav rail */
+.rail {
+  display: flex; flex-direction: column; align-items: center; gap: .5rem;
+  background: var(--surface); border-radius: var(--r-lg); padding: 1.1rem .5rem;
+}
+.rail-time { font-family: var(--font-num); font-size: 1.35rem; font-variant-numeric: tabular-nums; padding-bottom: .5rem; }
+.navbtn {
+  width: 4.5rem; height: 4.5rem; border-radius: var(--r-md);
+  display: grid; place-items: center; color: var(--muted);
+  transition: background .15s, color .15s;
+}
+.navbtn:active { background: var(--surface-2); }
+.navbtn[aria-current="page"] { background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent); }
+.rail-spacer { flex: 1; }
+
+main { min-width: 0; min-height: 0; position: relative; }
+.view { height: 100%; min-height: 0; }
+.card { background: var(--surface); border-radius: var(--r-lg); padding: 1.25rem; min-width: 0; min-height: 0; }
+.eyebrow { font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+
+/* Home */
+.home { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: .75rem; height: 100%; }
+.home-side { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: .75rem; min-height: 0; }
+.map-card { position: relative; overflow: hidden; padding: 0; }
+.map-host { position: absolute; inset: 0; }
+
+.clock-card { display: flex; justify-content: space-between; align-items: flex-end; gap: 1rem; }
+.big-time { font-family: var(--font-num); font-size: 3.6rem; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.date-line { color: var(--muted); margin-top: .4rem; }
+.weather { text-align: right; }
+.weather-temp { font-size: 2.1rem; font-weight: 500; }
+.weather-desc { color: var(--muted); font-size: .9rem; }
+
+.media-card { display: flex; flex-direction: column; gap: 1.5rem; justify-content: center; }
+.media-top { display: flex; gap: 1rem; align-items: center; min-width: 0; }
+.art {
+  width: 5.5rem; height: 5.5rem; border-radius: var(--r-md); flex: none;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 55%, #1d2733), #12161c);
+  display: grid; place-items: center; color: var(--fg);
+}
+.art svg { width: 2.4rem; height: 2.4rem; fill: currentColor; opacity: .85; }
+.track-meta { min-width: 0; }
+.track-title { font-size: 1.25rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.track-sub { color: var(--muted); font-size: .9rem; margin-top: .2rem; }
+.progress { height: .35rem; background: var(--surface-2); border-radius: 1rem; overflow: hidden; }
+.progress > i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: inherit; }
+.controls { display: flex; align-items: center; justify-content: space-around; gap: .5rem; }
+.ctl { width: 4rem; height: 4rem; border-radius: 50%; display: grid; place-items: center; }
+.ctl:active { background: var(--surface-2); }
+.ctl.play { width: 4.75rem; height: 4.75rem; background: var(--accent); color: var(--accent-ink); }
+.ctl.play svg { width: 2.2rem; height: 2.2rem; }
+
+.shortcut-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .5rem; padding: .9rem; }
+
+/* App tiles */
+.app { display: flex; flex-direction: column; align-items: center; gap: .55rem; padding: .6rem .25rem; border-radius: var(--r-md); position: relative; min-width: 0; }
+.app:active { background: var(--surface-2); }
+.app-ico {
+  width: 4.25rem; height: 4.25rem; border-radius: 50%; display: grid; place-items: center;
+  font-weight: 650; font-size: 1.3rem; color: #0b0d10; letter-spacing: -.02em;
+}
+.app-name { font-size: .9rem; text-align: center; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.app-del {
+  position: absolute; top: .1rem; right: .6rem; width: 2rem; height: 2rem; border-radius: 50%;
+  background: var(--surface-2); border: 1px solid var(--line); display: none; place-items: center;
+}
+.app-del svg { width: 1.1rem; height: 1.1rem; fill: currentColor; }
+.editing .app-del { display: grid; }
+.editing .app .app-ico { animation: wobble .35s ease-in-out infinite alternate; }
+@keyframes wobble { from { transform: rotate(-3deg); } to { transform: rotate(3deg); } }
+
+.page { height: 100%; display: flex; flex-direction: column; gap: .75rem; min-height: 0; }
+.page-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .25rem .5rem; flex-wrap: wrap; }
+.page-head h1 { font-size: 1.9rem; font-weight: 500; margin: 0; }
+.head-actions { display: flex; gap: .5rem; flex-wrap: wrap; }
+.pill {
+  display: inline-flex; align-items: center; gap: .5rem; min-height: 3.5rem; padding: 0 1.4rem;
+  border-radius: 2rem; background: var(--surface-2); font-weight: 500;
+}
+.pill svg { width: 1.4rem; height: 1.4rem; fill: currentColor; }
+.pill.primary { background: var(--accent); color: var(--accent-ink); }
+.pill:active { filter: brightness(1.15); }
+.scroll { overflow-y: auto; min-height: 0; flex: 1; border-radius: var(--r-lg); }
+.app-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); gap: .75rem; padding: 1.25rem; }
+.app-grid .app-ico { width: 5.5rem; height: 5.5rem; font-size: 1.7rem; }
+.app-grid .app-name { font-size: 1rem; }
+
+/* Map */
+.map { position: absolute; inset: 0; background-color: #10141a;
+  background-image: linear-gradient(#1b2028 1px, transparent 1px), linear-gradient(90deg, #1b2028 1px, transparent 1px);
+  background-size: 48px 48px; touch-action: none; }
+.map-offline { position: absolute; left: 50%; top: 1.25rem; transform: translateX(-50%); z-index: 700;
+  background: var(--surface); color: var(--muted); font-size: .85rem; padding: .5rem 1rem; border-radius: 2rem; display: none; white-space: nowrap; }
+.map.offline .map-offline { display: block; }
+.map-overlay { position: absolute; z-index: 800; display: flex; gap: .5rem; }
+.map-search-pill { top: 1rem; left: 1rem; right: 1rem; }
+.search-fake {
+  flex: 1; min-height: 3.75rem; display: flex; align-items: center; gap: .75rem; padding: 0 1.25rem;
+  background: var(--surface); border-radius: 2rem; color: var(--muted); box-shadow: 0 6px 18px rgb(0 0 0 / .35); text-align: left;
+}
+.speed-bubble { left: 1rem; bottom: 1rem; }
+.speed {
+  width: 6rem; height: 6rem; border-radius: 50%; background: var(--surface); border: 3px solid var(--line);
+  display: grid; place-content: center; text-align: center; box-shadow: 0 6px 18px rgb(0 0 0 / .35);
+}
+.speed b { font-family: var(--font-num); font-size: 2rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.speed small { color: var(--muted); font-size: .75rem; }
+.map-btns { right: 1rem; bottom: 1rem; flex-direction: column; }
+.fab { width: 3.75rem; height: 3.75rem; border-radius: 50%; background: var(--surface); display: grid; place-items: center; box-shadow: 0 6px 18px rgb(0 0 0 / .35); }
+.fab.on { color: var(--accent); }
+.fab:active { background: var(--surface-2); }
+
+.nav-layout { display: grid; grid-template-columns: minmax(0, 1fr) 24rem; gap: .75rem; height: 100%; }
+.nav-panel { display: flex; flex-direction: column; gap: 1rem; overflow-y: auto; }
+.field {
+  width: 100%; min-height: 3.75rem; border-radius: 1rem; border: 2px solid var(--line); background: var(--surface-2);
+  padding: 0 1.1rem; font-size: 1.1rem; user-select: text;
+}
+.field:focus { outline: none; border-color: var(--accent); }
+.go-row { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
+.go-row .pill { justify-content: center; padding: 0 .75rem; }
+.pill[aria-disabled="true"] { opacity: .4; pointer-events: none; }
+.list { display: flex; flex-direction: column; }
+.list-item { display: flex; align-items: center; gap: .9rem; min-height: 3.75rem; padding: .5rem .5rem; border-radius: .9rem; text-align: left; width: 100%; }
+.list-item:active { background: var(--surface-2); }
+.list-item svg { fill: var(--muted); width: 1.4rem; height: 1.4rem; }
+.list-item .grow { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.list-item.active { color: var(--accent); }
+.list-item.active svg { fill: var(--accent); }
+.hint { color: var(--muted); font-size: .9rem; line-height: 1.5; }
+
+/* Media page */
+.media-layout { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: .75rem; height: 100%; }
+.player { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.25rem; text-align: center; }
+.player .art { width: 13rem; height: 13rem; border-radius: 1.75rem; }
+.player .art svg { width: 5rem; height: 5rem; }
+.player .track-title { font-size: 1.7rem; white-space: normal; text-wrap: balance; }
+.player .progress { width: 100%; max-width: 32rem; height: .55rem; cursor: pointer; }
+.times { width: 100%; max-width: 32rem; display: flex; justify-content: space-between; color: var(--muted); font-family: var(--font-num); font-size: .85rem; font-variant-numeric: tabular-nums; }
+.player .controls { width: 100%; max-width: 26rem; }
+.player .ctl { width: 5rem; height: 5rem; }
+.player .ctl svg { width: 2.25rem; height: 2.25rem; }
+.player .ctl.play { width: 6rem; height: 6rem; }
+.player .ctl.play svg { width: 2.8rem; height: 2.8rem; }
+.side-panel { display: flex; flex-direction: column; gap: 1rem; overflow-y: auto; }
+.services { display: grid; grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr)); gap: .5rem; }
+
+/* Settings */
+.settings { display: flex; flex-direction: column; gap: .75rem; max-width: 52rem; padding: .25rem; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 4.5rem; padding: .5rem 1.25rem; flex-wrap: wrap; }
+.row-label b { display: block; font-weight: 500; font-size: 1.1rem; }
+.row-label span { color: var(--muted); font-size: .9rem; }
+.switch { width: 4.25rem; height: 2.4rem; border-radius: 2rem; background: var(--surface-2); border: 2px solid var(--line); position: relative; flex: none; }
+.switch::after { content: ""; position: absolute; top: .25rem; left: .3rem; width: 1.6rem; height: 1.6rem; border-radius: 50%; background: var(--muted); transition: transform .15s, background .15s; }
+.switch[aria-checked="true"] { background: color-mix(in srgb, var(--accent) 35%, var(--surface-2)); border-color: var(--accent); }
+.switch[aria-checked="true"]::after { transform: translateX(1.75rem); background: var(--accent); }
+.swatches { display: flex; gap: .6rem; }
+.swatch { width: 3rem; height: 3rem; border-radius: 50%; border: 3px solid transparent; }
+.swatch[aria-pressed="true"] { border-color: var(--fg); }
+
+/* Dialog + toast */
+.sheet-backdrop { position: fixed; inset: 0; background: rgb(0 0 0 / .6); display: grid; place-items: center; z-index: 2000; padding: 1rem; }
+.sheet { width: min(34rem, 100%); background: var(--surface); border-radius: var(--r-lg); padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
+.sheet h2 { margin: 0; font-weight: 500; font-size: 1.4rem; }
+.sheet .err { color: var(--warn); font-size: .9rem; min-height: 1.2em; }
+.sheet-actions { display: flex; justify-content: flex-end; gap: .5rem; }
+.toast { position: fixed; left: 50%; bottom: max(1.5rem, env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 1rem); opacity: 0;
+  background: var(--fg); color: var(--bg); padding: .8rem 1.4rem; border-radius: 2rem; z-index: 3000; transition: .2s; pointer-events: none; font-weight: 500; }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* Leaflet essentials (its stylesheet cannot be loaded from a CDN here) */
+.leaflet-pane, .leaflet-tile, .leaflet-marker-icon, .leaflet-tile-container, .leaflet-pane > svg, .leaflet-pane > canvas, .leaflet-layer { position: absolute; left: 0; top: 0; }
+.leaflet-container { overflow: hidden; outline: none; }
+.leaflet-tile { user-select: none; visibility: hidden; }
+.leaflet-tile-loaded { visibility: inherit; }
+.leaflet-container img.leaflet-tile { max-width: none !important; max-height: none !important; width: 256px; height: 256px; }
+.leaflet-tile-pane { z-index: 200; } .leaflet-overlay-pane { z-index: 400; } .leaflet-marker-pane { z-index: 600; }
+.leaflet-zoom-animated { transform-origin: 0 0; }
+.leaflet-zoom-anim .leaflet-zoom-animated { transition: transform .25s cubic-bezier(0,0,.25,1); }
+.leaflet-zoom-anim .leaflet-tile, .leaflet-pan-anim .leaflet-tile { transition: none; }
+.leaflet-control-container .leaflet-bottom.leaflet-right { position: absolute; right: 0; bottom: 0; z-index: 750; }
+.leaflet-control-attribution { font-size: 10px; color: var(--muted); background: rgb(11 13 16 / .7); padding: 1px 6px; border-top-left-radius: 6px; }
+.leaflet-control-attribution a { color: var(--muted); }
+.me { background: none; border: 0; }
+.me-dot { width: 28px; height: 28px; border-radius: 50%; background: var(--accent); border: 4px solid #fff; box-shadow: 0 0 0 10px color-mix(in srgb, var(--accent) 25%, transparent); }
+
+/* Phone / narrow */
+@media (max-width: 760px) {
+  body { overflow: auto; }
+  .shell { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; height: auto; min-height: 100%; }
+  .rail { flex-direction: row; justify-content: space-around; order: 2; padding: .4rem; position: sticky; bottom: .5rem; z-index: 900; }
+  .rail-time, .rail-spacer { display: none; }
+  .navbtn { width: 3.5rem; height: 3.5rem; }
+  .home, .media-layout, .nav-layout { grid-template-columns: minmax(0, 1fr); height: auto; }
+  .map-card { height: 55vh; }
+  .view.nav .map-card { height: 50vh; }
+  .page { height: auto; }
+  .scroll { overflow: visible; }
+  .big-time { font-size: 2.8rem; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></symbol>
+  <symbol id="i-apps" viewBox="0 0 24 24"><path d="M4 8h4V4H4v4zm6 12h4v-4h-4v4zm-6 0h4v-4H4v4zm0-6h4v-4H4v4zm6 0h4v-4h-4v4zm6-10v4h4V4h-4zm-6 4h4V4h-4v4zm6 6h4v-4h-4v4zm0 6h4v-4h-4v4z"/></symbol>
+  <symbol id="i-nav" viewBox="0 0 24 24"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></symbol>
+  <symbol id="i-music" viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.488.488 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></symbol>
+  <symbol id="i-next" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></symbol>
+  <symbol id="i-prev" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></symbol>
+  <symbol id="i-add" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></symbol>
+  <symbol id="i-loc" viewBox="0 0 24 24"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0013 3.06V1h-2v2.06A8.994 8.994 0 003.06 11H1v2h2.06A8.994 8.994 0 0011 20.94V23h2v-2.06A8.994 8.994 0 0020.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></symbol>
+  <symbol id="i-plusz" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M19 13H5v-2h14v2z"/></symbol>
+  <symbol id="i-history" viewBox="0 0 24 24"><path d="M13 3a9 9 0 00-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0013 21a9 9 0 000-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></symbol>
+  <symbol id="i-full" viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></symbol>
+</svg>
+
+<div class="shell">
+  <nav class="rail" aria-label="เมนูหลัก">
+    <div class="rail-time" id="railTime">--:--</div>
+    <button class="navbtn" data-go="home" aria-current="page" aria-label="หน้าหลัก"><svg class="i"><use href="#i-home"/></svg></button>
+    <button class="navbtn" data-go="nav" aria-label="นำทาง"><svg class="i"><use href="#i-nav"/></svg></button>
+    <button class="navbtn" data-go="media" aria-label="เพลง"><svg class="i"><use href="#i-music"/></svg></button>
+    <button class="navbtn" data-go="apps" aria-label="แอปทั้งหมด"><svg class="i"><use href="#i-apps"/></svg></button>
+    <div class="rail-spacer"></div>
+    <button class="navbtn" data-go="settings" aria-label="ตั้งค่า"><svg class="i"><use href="#i-gear"/></svg></button>
+  </nav>
+
+  <main>
+    <!-- Home -->
+    <section class="view" data-view="home">
+      <div class="home">
+        <div class="card map-card"><div class="map-host" id="homeMapHost"></div></div>
+        <div class="home-side">
+          <div class="card clock-card">
+            <div>
+              <div class="big-time" id="bigTime">--:--</div>
+              <div class="date-line" id="dateLine"></div>
+            </div>
+            <div class="weather">
+              <div class="weather-temp" id="wTemp">--°</div>
+              <div class="weather-desc" id="wDesc">กำลังโหลดอากาศ</div>
+            </div>
+          </div>
+          <div class="card media-card">
+            <div class="media-top">
+              <div class="art"><svg><use href="#i-music"/></svg></div>
+              <div class="track-meta">
+                <div class="eyebrow">กำลังเล่น</div>
+                <div class="track-title" data-bind="title">ยังไม่มีเพลง</div>
+                <div class="track-sub" data-bind="sub">แตะเพื่อเพิ่มไฟล์เพลง</div>
+              </div>
+            </div>
+            <div class="progress"><i data-bind="bar"></i></div>
+            <div class="controls">
+              <button class="ctl" data-act="prev" aria-label="เพลงก่อนหน้า"><svg class="i"><use href="#i-prev"/></svg></button>
+              <button class="ctl play" data-act="toggle" aria-label="เล่นหรือหยุด"><svg class="i"><use href="#i-play" data-bind="playicon"/></svg></button>
+              <button class="ctl" data-act="next" aria-label="เพลงถัดไป"><svg class="i"><use href="#i-next"/></svg></button>
+            </div>
+          </div>
+          <div class="card shortcut-row" id="homeApps"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Navigation -->
+    <section class="view nav" data-view="nav" hidden>
+      <div class="nav-layout">
+        <div class="card map-card"><div class="map-host" id="navMapHost"></div></div>
+        <div class="card nav-panel">
+          <div class="eyebrow">ไปที่ไหน</div>
+          <form id="navForm" autocomplete="off">
+            <input class="field" id="dest" type="search" placeholder="ค้นหาสถานที่ เช่น สยามพารากอน" enterkeyhint="go">
+          </form>
+          <div class="go-row">
+            <a class="pill primary" id="goGmaps" target="_blank" rel="noopener" aria-disabled="true">Google Maps</a>
+            <a class="pill" id="goWaze" target="_blank" rel="noopener" aria-disabled="true">Waze</a>
+          </div>
+          <div class="eyebrow">ล่าสุด</div>
+          <div class="list" id="recentList"></div>
+          <p class="hint">เปิดเส้นทางในแท็บใหม่ ระบบนำทางจริงของรถยังใช้หน้าจอแผนที่ของ Tesla ตามปกติ</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Media -->
+    <section class="view" data-view="media" hidden>
+      <div class="media-layout">
+        <div class="card player">
+          <div class="art"><svg><use href="#i-music"/></svg></div>
+          <div>
+            <div class="track-title" data-bind="title">ยังไม่มีเพลง</div>
+            <div class="track-sub" data-bind="sub">แตะเพื่อเพิ่มไฟล์เพลง</div>
+          </div>
+          <div class="progress" id="seekBar"><i data-bind="bar"></i></div>
+          <div class="times"><span data-bind="cur">0:00</span><span data-bind="dur">0:00</span></div>
+          <div class="controls">
+            <button class="ctl" data-act="prev" aria-label="เพลงก่อนหน้า"><svg class="i"><use href="#i-prev"/></svg></button>
+            <button class="ctl play" data-act="toggle" aria-label="เล่นหรือหยุด"><svg class="i"><use href="#i-play" data-bind="playicon"/></svg></button>
+            <button class="ctl" data-act="next" aria-label="เพลงถัดไป"><svg class="i"><use href="#i-next"/></svg></button>
+          </div>
+        </div>
+        <div class="card side-panel">
+          <label class="pill primary" for="fileIn" style="align-self:flex-start"><svg><use href="#i-add"/></svg>เพิ่มไฟล์เพลง</label>
+          <input id="fileIn" type="file" accept="audio/*" multiple hidden>
+          <div class="eyebrow">คิวเพลง</div>
+          <div class="list" id="playlist"></div>
+          <div class="eyebrow">บริการเพลงออนไลน์</div>
+          <div class="services" id="services"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Apps -->
+    <section class="view" data-view="apps" hidden>
+      <div class="page">
+        <div class="page-head">
+          <h1>แอป</h1>
+          <div class="head-actions">
+            <button class="pill" id="editApps"><svg><use href="#i-edit"/></svg><span>จัดการ</span></button>
+            <button class="pill primary" id="addApp"><svg><use href="#i-add"/></svg>เพิ่มทางลัด</button>
+          </div>
+        </div>
+        <div class="card scroll" style="padding:0"><div class="app-grid" id="appGrid"></div></div>
+      </div>
+    </section>
+
+    <!-- Settings -->
+    <section class="view" data-view="settings" hidden>
+      <div class="page">
+        <div class="page-head"><h1>ตั้งค่า</h1></div>
+        <div class="scroll">
+          <div class="settings">
+            <div class="card row">
+              <div class="row-label"><b>นาฬิกา 24 ชั่วโมง</b><span>ปิดเพื่อแสดงแบบ 12 ชั่วโมง</span></div>
+              <button class="switch" role="switch" id="sw24" aria-label="นาฬิกา 24 ชั่วโมง"></button>
+            </div>
+            <div class="card row">
+              <div class="row-label"><b>ตัวอักษรใหญ่</b><span>ขยายปุ่มและข้อความให้กดง่ายขึ้นขณะจอดรถ</span></div>
+              <button class="switch" role="switch" id="swBig" aria-label="ตัวอักษรใหญ่"></button>
+            </div>
+            <div class="card row">
+              <div class="row-label"><b>สีหลัก</b><span>สีของปุ่มและไฮไลต์</span></div>
+              <div class="swatches" id="swatches"></div>
+            </div>
+            <div class="card row">
+              <div class="row-label"><b>เต็มจอ</b><span>ซ่อนแถบเบราว์เซอร์ ถ้าเบราว์เซอร์อนุญาต</span></div>
+              <button class="pill" id="fullBtn"><svg><use href="#i-full"/></svg>เปิดเต็มจอ</button>
+            </div>
+            <div class="card row">
+              <div class="row-label"><b>รีเซ็ตทางลัด</b><span>กลับไปใช้ชุดแอปเริ่มต้น</span></div>
+              <button class="pill" id="resetApps">รีเซ็ต</button>
+            </div>
+            <div class="card row">
+              <div class="row-label"><b>ตำแหน่ง GPS</b><span id="gpsState">กำลังตรวจสอบ</span></div>
+            </div>
+            <p class="hint" style="padding:0 1.25rem">ทางลัด ไฟล์เพลง และการตั้งค่าเก็บไว้ในเบราว์เซอร์ของรถคันนี้เท่านั้น ไฟล์เพลงต้องเลือกใหม่ทุกครั้งที่เปิดหน้า</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- One shared map element, moved between Home and Navigation -->
+<div class="map" id="map"><div class="map-offline">แผนที่ออฟไลน์ ต้องเชื่อมต่ออินเทอร์เน็ต</div></div>
+<div class="map-overlay map-search-pill" id="mapSearch"><button class="search-fake" data-go="nav"><svg class="i"><use href="#i-search"/></svg>ค้นหาจุดหมาย</button></div>
+<div class="map-overlay speed-bubble" id="speedBubble"><div class="speed"><b id="speedVal">–</b><small>กม./ชม.</small></div></div>
+<div class="map-overlay map-btns" id="mapBtns">
+  <button class="fab" id="zoomIn" aria-label="ซูมเข้า"><svg class="i"><use href="#i-plusz"/></svg></button>
+  <button class="fab" id="zoomOut" aria-label="ซูมออก"><svg class="i"><use href="#i-minus"/></svg></button>
+  <button class="fab on" id="follow" aria-label="ตามตำแหน่งรถ"><svg class="i"><use href="#i-loc"/></svg></button>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+<audio id="audio" preload="metadata"></audio>
+
+<script>
+(() => {
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem('acw:' + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem('acw:' + k, JSON.stringify(v)); } catch (e) {} }
+  };
+  const toastEl = $('#toast'); let toastT;
+  const toast = msg => { toastEl.textContent = msg; toastEl.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => toastEl.classList.remove('show'), 2200); };
+
+  /* ---------- Settings ---------- */
+  const ACCENTS = { blue: ['#8ab4f8', '#0b1a33'], teal: ['#6fd3c4', '#062621'], amber: ['#f2c26b', '#2b1c02'], rose: ['#f28b9b', '#33080f'] };
+  const settings = Object.assign({ h24: true, big: false, accent: 'blue' }, store.get('settings', {}));
+  function applySettings() {
+    const [a, ink] = ACCENTS[settings.accent] || ACCENTS.blue;
+    document.documentElement.style.setProperty('--accent', a);
+    document.documentElement.style.setProperty('--accent-ink', ink);
+    document.documentElement.classList.toggle('big', settings.big);
+    $('#sw24').setAttribute('aria-checked', settings.h24);
+    $('#swBig').setAttribute('aria-checked', settings.big);
+    $$('.swatch').forEach(s => s.setAttribute('aria-pressed', s.dataset.k === settings.accent));
+    store.set('settings', settings);
+    tick();
+    if (map) setTimeout(() => map.invalidateSize(), 50);
+  }
+  $('#swatches').innerHTML = Object.entries(ACCENTS).map(([k, [c]]) =>
+    `<button class="swatch" data-k="${k}" style="background:${c}" aria-label="สี ${k}"></button>`).join('');
+  $('#swatches').addEventListener('click', e => { const b = e.target.closest('.swatch'); if (b) { settings.accent = b.dataset.k; applySettings(); } });
+  $('#sw24').onclick = () => { settings.h24 = !settings.h24; applySettings(); };
+  $('#swBig').onclick = () => { settings.big = !settings.big; applySettings(); };
+  $('#fullBtn').onclick = () => {
+    const el = document.documentElement;
+    if (document.fullscreenElement) { document.exitFullscreen(); return; }
+    const p = el.requestFullscreen ? el.requestFullscreen() : null;
+    if (!p) toast('เบราว์เซอร์นี้ไม่รองรับโหมดเต็มจอ');
+    else p.catch(() => toast('เบราว์เซอร์นี้ไม่อนุญาตโหมดเต็มจอ'));
+  };
+
+  /* ---------- Clock ---------- */
+  function tick() {
+    const d = new Date();
+    const t = d.toLocaleTimeString(settings.h24 ? 'en-GB' : 'en-US', { hour: settings.h24 ? '2-digit' : 'numeric', minute: '2-digit', hour12: !settings.h24 });
+    $('#railTime').textContent = t.replace(/\s?[AP]M/, '');
+    $('#bigTime').textContent = t;
+    $('#dateLine').textContent = d.toLocaleDateString('th-TH', { weekday: 'long', day: 'numeric', month: 'long' });
+  }
+  setInterval(tick, 1000);
+
+  /* ---------- Views ---------- */
+  let current = 'home';
+  function go(view) {
+    current = view;
+    $$('.view').forEach(v => v.hidden = v.dataset.view !== view);
+    $$('.rail .navbtn').forEach(b => b.dataset.go === view ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current'));
+    placeMap();
+    if (view === 'nav') setTimeout(() => $('#dest').focus(), 60);
+    store.set('view', view === 'settings' ? 'home' : view);
+  }
+  document.addEventListener('click', e => { const b = e.target.closest('[data-go]'); if (b) go(b.dataset.go); });
+
+  /* ---------- Map ---------- */
+  let map = null, marker = null, follow = true;
+  let pos = store.get('lastPos', [13.7563, 100.5018]); // Bangkok until GPS answers
+  const mapEl = $('#map');
+  const mapSearchEl = $('#mapSearch');
+  function placeMap() {
+    const host = current === 'nav' ? $('#navMapHost') : $('#homeMapHost');
+    if (mapEl.parentNode !== host) host.append(mapEl, $('#mapBtns'), $('#speedBubble'));
+    if (current === 'nav') mapSearchEl.remove();
+    else if (mapSearchEl.parentNode !== host) host.append(mapSearchEl);
+    if (map) setTimeout(() => map.invalidateSize(), 30);
+  }
+  function initMap() {
+    placeMap();
+    if (!window.L) { mapEl.classList.add('offline'); return; }
+    map = L.map(mapEl, { zoomControl: false, attributionControl: true }).setView(pos, 15);
+    map.attributionControl.setPrefix('');
+    const tiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      subdomains: 'abcd', maxZoom: 20, attribution: '© OpenStreetMap © CARTO'
+    }).addTo(map);
+    let errs = 0;
+    tiles.on('tileerror', () => { if (++errs > 2) mapEl.classList.add('offline'); });
+    tiles.on('tileload', () => { errs = 0; mapEl.classList.remove('offline'); });
+    marker = L.marker(pos, { icon: L.divIcon({ className: 'me', html: '<div class="me-dot"></div>', iconSize: [28, 28], iconAnchor: [14, 14] }) }).addTo(map);
+    map.on('dragstart', () => setFollow(false));
+  }
+  function setFollow(on) {
+    follow = on; $('#follow').classList.toggle('on', on);
+    if (on && map) map.setView(pos, Math.max(map.getZoom(), 15));
+  }
+  $('#follow').onclick = () => setFollow(true);
+  $('#zoomIn').onclick = () => map && map.zoomIn();
+  $('#zoomOut').onclick = () => map && map.zoomOut();
+
+  /* ---------- GPS + speed + weather ---------- */
+  let weatherLoaded = false;
+  function gpsState(t) { $('#gpsState').textContent = t; }
+  if ('geolocation' in navigator) {
+    try {
+      navigator.geolocation.watchPosition(p => {
+        pos = [p.coords.latitude, p.coords.longitude];
+        store.set('lastPos', pos);
+        gpsState('ใช้งานได้ ความแม่นยำ ±' + Math.round(p.coords.accuracy) + ' ม.');
+        if (marker) marker.setLatLng(pos);
+        if (map && follow) map.panTo(pos);
+        const s = p.coords.speed;
+        $('#speedVal').textContent = s == null || isNaN(s) ? '–' : Math.round(s * 3.6);
+        if (!weatherLoaded) loadWeather();
+      }, () => gpsState('ไม่ได้รับอนุญาต ใช้ตำแหน่งล่าสุดแทน'), { enableHighAccuracy: true, maximumAge: 1000, timeout: 15000 });
+    } catch (e) { gpsState('ใช้ไม่ได้ในหน้านี้'); }
+  } else gpsState('เบราว์เซอร์นี้ไม่มี GPS');
+
+  const WMO = { 0: 'ท้องฟ้าแจ่มใส', 1: 'มีเมฆเล็กน้อย', 2: 'มีเมฆบางส่วน', 3: 'เมฆมาก', 45: 'หมอก', 48: 'หมอก', 51: 'ฝนปรอย', 53: 'ฝนปรอย', 55: 'ฝนปรอย', 61: 'ฝนเล็กน้อย', 63: 'ฝนปานกลาง', 65: 'ฝนหนัก', 80: 'ฝนซู่', 81: 'ฝนซู่', 82: 'ฝนซู่หนัก', 95: 'พายุฝนฟ้าคะนอง', 96: 'พายุฝนฟ้าคะนอง', 99: 'พายุฝนฟ้าคะนอง' };
+  async function loadWeather() {
+    weatherLoaded = true;
+    try {
+      const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${pos[0].toFixed(3)}&longitude=${pos[1].toFixed(3)}&current=temperature_2m,weather_code&timezone=auto`);
+      const j = await r.json();
+      $('#wTemp').textContent = Math.round(j.current.temperature_2m) + '°';
+      $('#wDesc').textContent = WMO[j.current.weather_code] || 'สภาพอากาศ';
+    } catch (e) { $('#wTemp').textContent = '--°'; $('#wDesc').textContent = 'ไม่มีข้อมูลอากาศ'; }
+  }
+  setTimeout(() => { if (!weatherLoaded) loadWeather(); }, 4000);
+
+  /* ---------- Navigation search ---------- */
+  let recent = store.get('recent', ['สนามบินสุวรรณภูมิ', 'Tesla Supercharger', 'เซ็นทรัลเวิลด์']);
+  const dest = $('#dest'), gm = $('#goGmaps'), wz = $('#goWaze');
+  function updateLinks() {
+    const q = dest.value.trim();
+    const on = q.length > 0;
+    gm.href = on ? 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(q) : '#';
+    wz.href = on ? 'https://waze.com/ul?navigate=yes&q=' + encodeURIComponent(q) : '#';
+    [gm, wz].forEach(a => a.setAttribute('aria-disabled', !on));
+  }
+  function remember() {
+    const q = dest.value.trim(); if (!q) return;
+    recent = [q, ...recent.filter(x => x !== q)].slice(0, 6); store.set('recent', recent); renderRecent();
+  }
+  function renderRecent() {
+    $('#recentList').innerHTML = recent.map(r => `<button class="list-item" data-q="${esc(r)}"><svg><use href="#i-history"/></svg><span class="grow">${esc(r)}</span></button>`).join('');
+  }
+  dest.addEventListener('input', updateLinks);
+  [gm, wz].forEach(a => a.addEventListener('click', remember));
+  $('#navForm').addEventListener('submit', e => { e.preventDefault(); if (dest.value.trim()) { remember(); gm.click(); } });
+  $('#recentList').addEventListener('click', e => { const b = e.target.closest('[data-q]'); if (b) { dest.value = b.dataset.q; updateLinks(); } });
+
+  /* ---------- Apps ---------- */
+  const DEFAULT_APPS = [
+    { n: 'YouTube', u: 'https://www.youtube.com' }, { n: 'YouTube Music', u: 'https://music.youtube.com' },
+    { n: 'Spotify', u: 'https://open.spotify.com' }, { n: 'Google Maps', u: 'https://www.google.com/maps' },
+    { n: 'Waze', u: 'https://www.waze.com/live-map' }, { n: 'Netflix', u: 'https://www.netflix.com' },
+    { n: 'JOOX', u: 'https://www.joox.com/th' }, { n: 'Google', u: 'https://www.google.com' }
+  ];
+  const TILE_COLORS = ['#8ab4f8', '#7fd39b', '#f2c26b', '#f28b9b', '#c3a6f5', '#6fd3c4', '#f5a26b', '#a8c7fa'];
+  let apps = store.get('apps', DEFAULT_APPS);
+  let editing = false;
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const mono = n => n.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase();
+  const colorFor = n => TILE_COLORS[[...n].reduce((a, c) => a + c.charCodeAt(0), 0) % TILE_COLORS.length];
+  const tile = (a, i) => `<a class="app" href="${esc(a.u)}" target="_blank" rel="noopener" data-i="${i}">
+      <span class="app-ico" style="background:${colorFor(a.n)}">${esc(mono(a.n))}</span>
+      <span class="app-name">${esc(a.n)}</span>
+      <span class="app-del" role="button" data-del="${i}" aria-label="ลบ ${esc(a.n)}"><svg><use href="#i-close"/></svg></span></a>`;
+  function renderApps() {
+    $('#appGrid').innerHTML = apps.map(tile).join('');
+    $('#homeApps').innerHTML = apps.slice(0, 3).map(tile).join('') +
+      `<button class="app" data-go="apps"><span class="app-ico" style="background:var(--surface-2);color:var(--fg)"><svg class="i"><use href="#i-apps"/></svg></span><span class="app-name">ทั้งหมด</span></button>`;
+    $('#services').innerHTML = apps.filter(a => /music|spotify|joox|youtube/i.test(a.u)).map(tile).join('');
+  }
+  $('#appGrid').addEventListener('click', e => {
+    const del = e.target.closest('[data-del]');
+    if (editing) e.preventDefault();
+    if (del) { const i = +del.dataset.del; const name = apps[i].n; apps.splice(i, 1); store.set('apps', apps); renderApps(); toast('ลบ ' + name + ' แล้ว'); }
+  });
+  $('#editApps').onclick = () => {
+    editing = !editing; $('#appGrid').classList.toggle('editing', editing);
+    $('#editApps span').textContent = editing ? 'เสร็จ' : 'จัดการ';
+  };
+  $('#resetApps').onclick = () => { apps = DEFAULT_APPS.slice(); store.set('apps', apps); renderApps(); toast('รีเซ็ตทางลัดแล้ว'); };
+  $('#addApp').onclick = () => {
+    const wrap = document.createElement('div');
+    wrap.className = 'sheet-backdrop';
+    wrap.innerHTML = `<form class="sheet" autocomplete="off">
+        <h2>เพิ่มทางลัด</h2>
+        <input class="field" id="newName" placeholder="ชื่อ เช่น Disney+" required>
+        <input class="field" id="newUrl" placeholder="ลิงก์ เช่น disneyplus.com" inputmode="url" required>
+        <div class="err" id="newErr"></div>
+        <div class="sheet-actions"><button type="button" class="pill" data-x>ยกเลิก</button><button class="pill primary">เพิ่ม</button></div>
+      </form>`;
+    document.body.append(wrap);
+    const close = () => wrap.remove();
+    wrap.addEventListener('click', e => { if (e.target === wrap || e.target.closest('[data-x]')) close(); });
+    $('form', wrap).addEventListener('submit', e => {
+      e.preventDefault();
+      const n = $('#newName', wrap).value.trim(); let u = $('#newUrl', wrap).value.trim();
+      if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
+      try { const url = new URL(u); if (!url.hostname.includes('.')) throw 0; u = url.href; }
+      catch (err) { $('#newErr', wrap).textContent = 'ลิงก์ไม่ถูกต้อง ลองพิมพ์แบบ example.com'; return; }
+      apps.push({ n, u }); store.set('apps', apps); renderApps(); close(); toast('เพิ่ม ' + n + ' แล้ว');
+    });
+    setTimeout(() => $('#newName', wrap).focus(), 30);
+  };
+
+  /* ---------- Media ---------- */
+  const audio = $('#audio');
+  let queue = [], idx = -1;
+  const fmt = s => isFinite(s) ? Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0') : '0:00';
+  function renderMedia() {
+    const t = queue[idx];
+    $$('[data-bind="title"]').forEach(e => e.textContent = t ? t.name : 'ยังไม่มีเพลง');
+    $$('[data-bind="sub"]').forEach(e => e.textContent = t ? `เพลงที่ ${idx + 1} จาก ${queue.length}` : 'แตะเพื่อเพิ่มไฟล์เพลง');
+    $$('[data-bind="playicon"]').forEach(e => e.setAttribute('href', audio.paused ? '#i-play' : '#i-pause'));
+    $('#playlist').innerHTML = queue.length
+      ? queue.map((q, i) => `<button class="list-item${i === idx ? ' active' : ''}" data-track="${i}"><svg><use href="#i-music"/></svg><span class="grow">${esc(q.name)}</span></button>`).join('')
+      : '<p class="hint">เลือกไฟล์เพลงจาก USB หรือเครื่องที่เปิดหน้านี้ แล้วเล่นได้ทันที</p>';
+  }
+  function load(i, play = true) {
+    if (!queue.length) return;
+    idx = (i + queue.length) % queue.length;
+    audio.src = queue[idx].url;
+    if (play) audio.play().catch(() => {});
+    renderMedia();
+  }
+  $('#fileIn').addEventListener('change', e => {
+    const files = [...e.target.files];
+    if (!files.length) return;
+    const start = queue.length;
+    files.forEach(f => queue.push({ name: f.name.replace(/\.[^.]+$/, ''), url: URL.createObjectURL(f) }));
+    toast(`เพิ่ม ${files.length} เพลงแล้ว`);
+    if (idx < 0) load(start); else renderMedia();
+    e.target.value = '';
+  });
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-act]');
+    if (b) {
+      if (!queue.length) { go('media'); toast('เพิ่มไฟล์เพลงก่อน'); return; }
+      if (b.dataset.act === 'toggle') audio.paused ? audio.play().catch(() => {}) : audio.pause();
+      if (b.dataset.act === 'next') load(idx + 1);
+      if (b.dataset.act === 'prev') audio.currentTime > 3 ? (audio.currentTime = 0) : load(idx - 1);
+      return;
+    }
+    const tr = e.target.closest('[data-track]'); if (tr) load(+tr.dataset.track);
+    if (e.target.closest('.media-card .media-top')) go('media');
+  });
+  $('#seekBar').addEventListener('click', e => {
+    if (!audio.duration) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    audio.currentTime = ((e.clientX - r.left) / r.width) * audio.duration;
+  });
+  audio.addEventListener('timeupdate', () => {
+    const p = audio.duration ? (audio.currentTime / audio.duration) * 100 : 0;
+    $$('[data-bind="bar"]').forEach(e => e.style.width = p + '%');
+    $$('[data-bind="cur"]').forEach(e => e.textContent = fmt(audio.currentTime));
+    $$('[data-bind="dur"]').forEach(e => e.textContent = fmt(audio.duration));
+  });
+  ['play', 'pause'].forEach(ev => audio.addEventListener(ev, renderMedia));
+  audio.addEventListener('ended', () => load(idx + 1));
+  if ('mediaSession' in navigator) {
+    try {
+      navigator.mediaSession.setActionHandler('nexttrack', () => load(idx + 1));
+      navigator.mediaSession.setActionHandler('previoustrack', () => load(idx - 1));
+    } catch (e) {}
+  }
+
+  /* ---------- Boot ---------- */
+  applySettings();
+  renderApps(); renderRecent(); renderMedia(); updateLinks();
+  initMap();
+  const startView = store.get('view', 'home');
+  go(['home', 'nav', 'media', 'apps'].includes(startView) ? startView : 'home');
+  try { navigator.wakeLock && navigator.wakeLock.request('screen').catch(() => {}); } catch (e) {}
+})();
+</script>
+
+</body>
+</html>
