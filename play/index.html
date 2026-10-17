@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#05040e">
+<title>Tesaro Games</title>
+<script>
+  // Threads (needed by PSP) require cross-origin isolation, which GitHub Pages can't send as headers;
+  // coi-serviceworker adds them from a service worker scoped to this /play/ folder only.
+  window.coi = { coepCredentialless: () => true, quiet: true };
+</script>
+<script src="coi-serviceworker.js"></script>
+<style>
+:root {
+  --void: #05040e; --panel: #141032; --line: rgb(168 150 255 / .2); --line-strong: rgb(168 150 255 / .36);
+  --fg: #f0ecff; --muted: #a29ccb; --violet: #7d6bff; --violet-hi: #c4b8ff; --glow: rgb(125 107 255 / .5); --warn: #ffc46b;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { background: radial-gradient(90% 70% at 50% -10%, #2a1f7a 0%, #0d0a26 45%, var(--void) 80%); color: var(--fg);
+  font-family: "IBM Plex Sans Thai", "Sora", system-ui, sans-serif; font-size: clamp(14px, 1.05vw, 20px); -webkit-tap-highlight-color: transparent; }
+button, a { font: inherit; color: inherit; text-decoration: none; }
+.wrap { height: 100%; display: grid; grid-template-rows: auto minmax(0, 1fr);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.bar { display: flex; align-items: center; gap: 1rem; padding-block: .9rem; }
+.back { display: inline-flex; align-items: center; gap: .5rem; min-height: 3.2rem; padding: 0 1.2rem 0 .9rem; border-radius: 2rem; border: 1px solid var(--line); background: rgb(20 16 48 / .6); }
+.back svg { width: 1.4rem; height: 1.4rem; fill: currentColor; }
+.title { font-family: "Sora", system-ui, sans-serif; font-weight: 300; font-size: 1.6rem; letter-spacing: -.01em; }
+.tag { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: .75rem; letter-spacing: .12em; color: var(--violet-hi); border: 1px solid var(--line-strong); border-radius: 1rem; padding: .25rem .6rem; }
+.stage { min-height: 0; display: grid; place-items: center; padding-bottom: 1rem; }
+.picker { width: min(40rem, 100%); background: rgb(20 15 52 / .8); border: 1px solid var(--line-strong); border-radius: 1.75rem; padding: 2rem; display: flex; flex-direction: column; gap: 1.1rem; text-align: center; box-shadow: 0 30px 80px rgb(0 0 0 / .5); }
+.picker h1 { font-family: "Sora", system-ui, sans-serif; font-weight: 300; font-size: 2rem; margin: 0; }
+.picker p { color: var(--muted); line-height: 1.6; margin: 0; }
+.picker .ext { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: .8rem; color: var(--violet-hi); }
+.pick { display: inline-flex; align-items: center; justify-content: center; gap: .6rem; min-height: 4rem; border-radius: 1rem; background: var(--violet); color: #fff; font-weight: 500; font-size: 1.1rem; cursor: pointer; box-shadow: 0 0 30px var(--glow); }
+.pick svg { width: 1.5rem; height: 1.5rem; fill: currentColor; }
+.warn { color: var(--warn); font-size: .9rem; }
+#game { width: 100%; height: 100%; }
+.game-box { width: 100%; height: 100%; border-radius: 1.25rem; overflow: hidden; border: 1px solid var(--line); background: #000; }
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@300&family=IBM+Plex+Sans+Thai:wght@400;500&family=IBM+Plex+Mono&display=swap">
+</head>
+<body>
+<div class="wrap">
+  <div class="bar">
+    <a class="back" href="../"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>Tesaro</a>
+    <span class="title" id="sysName">เกม</span><span class="tag" id="sysTag"></span>
+  </div>
+  <div class="stage" id="stage">
+    <div class="picker" id="picker">
+      <h1 id="pickTitle">เปิดไฟล์เกม</h1>
+      <p id="pickHelp">เลือกไฟล์เกมของคุณจาก USB หรือจากเครื่อง</p>
+      <div class="ext" id="exts"></div>
+      <label class="pick" for="rom"><svg viewBox="0 0 24 24"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>เลือกไฟล์เกม</label>
+      <input id="rom" type="file" hidden>
+      <p class="warn" id="warn" hidden></p>
+      <p>ความคืบหน้าเกมบันทึกไว้ในเบราว์เซอร์ของรถ ใช้เมนูของตัวเล่นเพื่อเซฟหรือโหลด</p>
+    </div>
+  </div>
+</div>
+<script>
+(() => {
+  const SYSTEMS = {
+    psp: ['PlayStation Portable', 'PSP', '.iso .cso .pbp .zip'],
+    psx: ['PlayStation', 'PS1', '.chd .pbp .iso .zip (ถ้ามี .cue กับ .bin ให้รวมไว้ใน zip เดียว)'],
+    n64: ['Nintendo 64', 'N64', '.z64 .n64 .v64 .zip'],
+    nds: ['Nintendo DS', 'NDS', '.nds .zip'],
+    gba: ['Game Boy Advance', 'GBA', '.gba .zip'],
+    snes: ['Super Nintendo', 'SNES', '.sfc .smc .zip'],
+    nes: ['Nintendo NES', 'NES', '.nes .zip'],
+    segaMD: ['Sega Mega Drive', 'MD', '.md .gen .bin .zip'],
+    gb: ['Game Boy / Color', 'GB', '.gb .gbc .zip']
+  };
+  const sys = new URLSearchParams(location.search).get('sys');
+  const info = SYSTEMS[sys];
+  const $ = s => document.querySelector(s);
+  if (!info) { $('#pickTitle').textContent = 'ไม่พบเครื่องเกมนี้'; $('#pickHelp').textContent = 'กลับไปหน้าเกมแล้วเลือกใหม่'; $('.pick').hidden = true; return; }
+  document.title = 'Tesaro · ' + info[0];
+  $('#sysName').textContent = info[0]; $('#sysTag').textContent = info[1];
+  $('#exts').textContent = 'ไฟล์ที่รองรับ: ' + info[2];
+  if (sys === 'psp' && !window.crossOriginIsolated) {
+    $('#warn').hidden = false;
+    $('#warn').textContent = 'PSP ต้องเปิดหน้านี้ใหม่หนึ่งครั้งเพื่อเปิดโหมดประมวลผลหลายเธรด ถ้าข้อความนี้ยังอยู่หลังรีเฟรช แปลว่าเบราว์เซอร์นี้ยังเล่น PSP ไม่ได้';
+  }
+  $('#rom').addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    $('#stage').innerHTML = '<div class="game-box"><div id="game"></div></div>';
+    Object.assign(window, {
+      EJS_player: '#game',
+      EJS_core: sys,
+      EJS_gameUrl: file,
+      EJS_gameName: file.name.replace(/\.[^.]+$/, ''),
+      EJS_pathtodata: 'data/',
+      EJS_startOnLoaded: true,
+      EJS_DEBUG_XX: true, // load the unminified sources shipped in data/src
+      EJS_threads: sys === 'psp' && !!window.crossOriginIsolated,
+      EJS_color: '#7d6bff',
+      EJS_backgroundColor: '#05040e'
+    });
+    const s = document.createElement('script');
+    s.src = 'data/loader.js';
+    document.body.append(s);
+  });
+})();
+</script>
+</body>
+</html>

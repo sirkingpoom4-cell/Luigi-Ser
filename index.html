@@ -4,13 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#0b0d10">
+<meta name="theme-color" content="#05040e">
 <style>*,*::before,*::after{box-sizing:border-box}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
-<title>Android Car Web</title>
+<title>Tesaro</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,400;8..144,500;8..144,650&family=Noto+Sans+Thai:wght@400;500;650&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@200;300;400;600&family=IBM+Plex+Sans+Thai:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <script>
 /* @preserve
  * Leaflet 1.9.4, a JS library for interactive maps. https://leafletjs.com
@@ -125,213 +125,286 @@ b){(new g(a)).read(b)},Reader:g,Config:q}},{"./ArrayFileReader":3,"./BlobFileRea
 
 </script>
 <style>
-/* Layout: Android Auto "split screen" — slim nav rail on the left, a large map card, and a stacked side column (clock, media, shortcuts). Single dark look, built for a car display. */
+/* Layout: Android TV / streaming-app shell. A slim top bar with pill tabs floats over a starfield; each tab is a vertical page of
+   horizontal card rails, opened by a planet-horizon hero. Single deep-space look (dark only), built for a car display. */
 :root {
-  --bg: #0b0d10;
-  --surface: #171a1f;
-  --surface-2: #22262d;
-  --line: #2c313a;
-  --fg: #e8eaee;
-  --muted: #9aa1ad;
-  --accent: #8ab4f8;
-  --accent-ink: #0b1a33;
-  --ok: #7fd39b;
-  --warn: #f2c26b;
-  --font-ui: "Roboto Flex", "Noto Sans Thai", system-ui, sans-serif;
-  --font-num: "Roboto Flex", "Noto Sans Thai", system-ui, sans-serif;
-  --r-lg: 1.5rem;
-  --r-md: 1.1rem;
+  --void: #05040e;
+  --deep: #0d0a26;
+  --panel: rgb(24 19 58 / .62);
+  --panel-solid: #141032;
+  --line: rgb(168 150 255 / .16);
+  --line-strong: rgb(168 150 255 / .32);
+  --fg: #f0ecff;
+  --muted: #a29ccb;
+  --violet: #7d6bff;
+  --violet-hi: #c4b8ff;
+  --violet-ink: #120a3a;
+  --glow: rgb(125 107 255 / .5);
+  --ok: #7fe0b0;
+  --warn: #ffc46b;
+  --font-display: "Sora", "IBM Plex Sans Thai", system-ui, sans-serif;
+  --font-ui: "IBM Plex Sans Thai", "Sora", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", "IBM Plex Sans Thai", ui-monospace, monospace;
+  --r-xl: 1.75rem; --r-lg: 1.35rem; --r-md: 1rem;
   color-scheme: dark;
 }
-html { font-size: clamp(14px, 1.05vw, 20px); height: 100%; }
-html.big { font-size: clamp(16px, 1.25vw, 24px); }
-body {
-  height: 100%; background: var(--bg); color: var(--fg);
-  font-family: var(--font-ui); overflow: hidden;
-  -webkit-tap-highlight-color: transparent; user-select: none;
-}
+html { font-size: clamp(14px, 1.02vw, 20px); height: 100%; }
+html.big { font-size: clamp(16px, 1.22vw, 24px); }
+body { height: 100%; margin: 0; background: var(--void); color: var(--fg); font-family: var(--font-ui); overflow: hidden;
+  -webkit-tap-highlight-color: transparent; user-select: none; }
 button, input, a { font: inherit; color: inherit; }
-button { background: none; border: 0; cursor: pointer; }
+button { background: none; border: 0; cursor: pointer; padding: 0; }
 a { text-decoration: none; }
-:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
-svg.i { width: 1.75rem; height: 1.75rem; fill: currentColor; flex: none; }
+:focus-visible { outline: 2px solid var(--violet-hi); outline-offset: 3px; }
+svg.i { width: 1.6rem; height: 1.6rem; fill: currentColor; flex: none; }
+#stars { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+.nebula { position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background: radial-gradient(60% 50% at 15% 0%, rgb(90 60 220 / .22), transparent 70%), radial-gradient(50% 40% at 95% 10%, rgb(160 90 255 / .14), transparent 70%); }
 
-.shell {
-  height: 100%; display: grid; grid-template-columns: 6.25rem minmax(0, 1fr); gap: .75rem;
-  padding-block: .75rem;
-  padding-left: max(16px, env(safe-area-inset-left, 0px));
-  padding-right: max(16px, env(safe-area-inset-right, 0px));
-}
+/* Top bar */
+.shell { position: relative; z-index: 1; height: 100%; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: minmax(0, 1fr); }
+.topbar { display: flex; align-items: center; gap: 1.25rem; padding-block: .9rem .6rem;
+  padding-left: max(16px, env(safe-area-inset-left, 0px), 1.5rem); padding-right: max(16px, env(safe-area-inset-right, 0px), 1.5rem); }
+.logo { display: flex; align-items: center; gap: .6rem; font-family: var(--font-display); font-weight: 300; font-size: 1.35rem; letter-spacing: .32em; flex: none; }
+.logo svg { width: 1.9rem; height: 1.9rem; }
+.tabs { flex: 1; display: flex; justify-content: center; gap: .4rem; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab { flex: none; display: inline-flex; align-items: center; gap: .5rem; min-height: 3.1rem; padding: 0 1.25rem; border-radius: 2rem;
+  border: 1px solid var(--line); background: rgb(20 16 48 / .5); color: var(--muted); font-size: 1rem; transition: .15s; }
+.tab svg { width: 1.2rem; height: 1.2rem; fill: currentColor; }
+.tab:hover { color: var(--fg); border-color: var(--line-strong); }
+.tab[aria-current="page"] { background: var(--violet); border-color: var(--violet); color: #fff; box-shadow: 0 0 24px var(--glow); }
+.status { display: flex; align-items: center; gap: 1rem; flex: none; }
+.clock { font-family: var(--font-display); font-weight: 300; font-size: 1.5rem; font-variant-numeric: tabular-nums; }
+.wx { font-family: var(--font-mono); font-size: .8rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; text-align: right; line-height: 1.3; }
+.wx b { display: block; color: var(--fg); font-family: var(--font-display); font-weight: 400; font-size: 1.05rem; letter-spacing: 0; }
+.icon-btn { width: 3.1rem; height: 3.1rem; border-radius: 50%; display: grid; place-items: center; border: 1px solid var(--line); background: rgb(20 16 48 / .5); color: var(--muted); }
+.icon-btn:hover, .icon-btn[aria-current="page"] { color: var(--fg); border-color: var(--line-strong); }
 
-/* Nav rail */
-.rail {
-  display: flex; flex-direction: column; align-items: center; gap: .5rem;
-  background: var(--surface); border-radius: var(--r-lg); padding: 1.1rem .5rem;
-}
-.rail-time { font-family: var(--font-num); font-size: 1.35rem; font-variant-numeric: tabular-nums; padding-bottom: .5rem; }
-.navbtn {
-  width: 4.5rem; height: 4.5rem; border-radius: var(--r-md);
-  display: grid; place-items: center; color: var(--muted);
-  transition: background .15s, color .15s;
-}
-.navbtn:active { background: var(--surface-2); }
-.navbtn[aria-current="page"] { background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent); }
-.rail-spacer { flex: 1; }
+/* Pages */
+main { min-height: 0; position: relative; }
+.view { position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: none;
+  padding-block: .5rem 7rem; padding-left: max(16px, env(safe-area-inset-left, 0px), 1.5rem); padding-right: max(16px, env(safe-area-inset-right, 0px), 1.5rem); }
+.view::-webkit-scrollbar { display: none; }
+.view.fill { overflow: hidden; padding-bottom: 1rem; }
+.eyebrow { font-family: var(--font-mono); font-size: .75rem; letter-spacing: .14em; text-transform: uppercase; color: var(--violet-hi); }
+.page-title { font-family: var(--font-display); font-weight: 300; font-size: 2.6rem; letter-spacing: -.02em; margin: .4rem 0 0; text-wrap: balance; }
+.page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin: .5rem 0 1.25rem; }
+.lead { color: var(--muted); max-width: 46rem; line-height: 1.6; margin: .5rem 0 0; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: .55rem; min-height: 3.4rem; padding: 0 1.5rem; border-radius: .9rem;
+  border: 1px solid var(--line-strong); background: rgb(30 24 70 / .7); font-weight: 500; transition: .15s; }
+.btn svg { width: 1.3rem; height: 1.3rem; fill: currentColor; }
+.btn:hover { border-color: var(--violet-hi); }
+.btn.primary { background: var(--violet); border-color: var(--violet); color: #fff; box-shadow: 0 0 28px var(--glow); }
+.btn.primary:hover { background: #8f7fff; }
+.btn[aria-disabled="true"] { opacity: .4; pointer-events: none; }
+.hint { color: var(--muted); font-size: .9rem; line-height: 1.55; margin: 0; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-lg); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); min-width: 0; }
 
-main { min-width: 0; min-height: 0; position: relative; }
-.view { height: 100%; min-height: 0; }
-.card { background: var(--surface); border-radius: var(--r-lg); padding: 1.25rem; min-width: 0; min-height: 0; }
-.eyebrow { font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+/* Hero with planet horizon */
+.hero { position: relative; overflow: hidden; border-radius: var(--r-xl); border: 1px solid var(--line); min-height: clamp(21rem, 50vh, 33rem);
+  background: radial-gradient(130% 95% at 50% -10%, #3a2a9c 0%, #1a1350 38%, #0a0720 70%); display: flex; align-items: flex-end; }
+.planet { position: absolute; left: 50%; top: 12%; width: 520%; aspect-ratio: 1; transform: translateX(-50%); border-radius: 50%;
+  background: radial-gradient(closest-side, #06051a 96%, #1d1460 98.6%, #8f7cff 99.6%, #efeaff 100%);
+  box-shadow: 0 -4px 22px 2px rgb(205 190 255 / .7), 0 -40px 140px 30px rgb(116 86 255 / .45); }
+.hero-poster { position: absolute; inset: 0; background-size: cover; background-position: center 30%; opacity: .16; mix-blend-mode: screen; transition: background-image .4s; }
+.hero-side { position: absolute; top: 1.5rem; right: 1.75rem; text-align: right; font-family: var(--font-mono); font-size: .72rem; letter-spacing: .14em; color: var(--muted); text-transform: uppercase; line-height: 1.6; }
+.hero-copy { position: relative; padding: 2rem 2.25rem 2.25rem; max-width: 46rem; text-shadow: 0 2px 18px rgb(5 4 14 / .8); }
+.hero-copy h1 { font-family: var(--font-display); font-weight: 300; font-size: clamp(2.4rem, 4.2vw, 4.4rem); line-height: 1.02; letter-spacing: -.03em; margin: .6rem 0 .8rem; text-wrap: balance; }
+.hero-copy p { color: #d3ccf5; line-height: 1.6; margin: 0 0 1.4rem; max-width: 38rem; }
+.chips { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
+.chip { font-family: var(--font-mono); font-size: .75rem; letter-spacing: .06em; padding: .3rem .7rem; border-radius: 2rem; border: 1px solid var(--line-strong); color: var(--violet-hi); }
+.hero-actions { display: flex; gap: .75rem; flex-wrap: wrap; }
+.dots { position: absolute; right: 1.75rem; bottom: 1.75rem; display: flex; gap: .45rem; }
+.dot { width: .55rem; height: .55rem; border-radius: 1rem; background: rgb(255 255 255 / .25); transition: .25s; }
+.dot.on { width: 1.8rem; background: var(--violet-hi); }
 
-/* Home */
-.home { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: .75rem; height: 100%; }
-.home-side { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: .75rem; min-height: 0; }
-.map-card { position: relative; overflow: hidden; padding: 0; }
-.map-host { position: absolute; inset: 0; }
+/* Card rails */
+.row { margin-top: 2rem; }
+.row-head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-bottom: .9rem; }
+.row-head h2 { font-family: var(--font-display); font-weight: 400; font-size: 1.45rem; margin: 0; letter-spacing: -.01em; }
+.row-head h2 small { font-family: var(--font-mono); font-size: .72rem; color: var(--muted); letter-spacing: .12em; margin-left: .75rem; text-transform: uppercase; font-weight: 400; }
+.see-all { color: var(--violet-hi); font-size: .95rem; padding: .4rem .2rem; }
+.rail { display: flex; gap: 1rem; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; padding: .5rem .25rem 1rem; margin: -.5rem -.25rem 0; }
+.rail::-webkit-scrollbar { display: none; }
+.rail > * { scroll-snap-align: start; flex: none; }
+.grid { display: grid; gap: 1.1rem; }
+.grid.films { grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr)); }
+.grid.services { grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); }
+.grid.games { grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); }
 
-.clock-card { display: flex; justify-content: space-between; align-items: flex-end; gap: 1rem; }
-.big-time { font-family: var(--font-num); font-size: 3.6rem; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
-.date-line { color: var(--muted); margin-top: .4rem; }
-.weather { text-align: right; }
-.weather-temp { font-size: 2.1rem; font-weight: 500; }
-.weather-desc { color: var(--muted); font-size: .9rem; }
+.card { position: relative; border-radius: var(--r-lg); overflow: hidden; border: 1px solid var(--line); background: var(--panel-solid);
+  transition: transform .18s ease, border-color .18s, box-shadow .18s; text-align: left; display: block; }
+.card:hover, .card:focus-visible { transform: translateY(-3px) scale(1.02); border-color: var(--violet-hi); box-shadow: 0 14px 40px rgb(0 0 0 / .5), 0 0 30px var(--glow); }
+.card:active { transform: scale(.98); }
 
-.media-card { display: flex; flex-direction: column; gap: 1.5rem; justify-content: center; }
-.media-top { display: flex; gap: 1rem; align-items: center; min-width: 0; }
-.art {
-  width: 5.5rem; height: 5.5rem; border-radius: var(--r-md); flex: none;
-  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 55%, #1d2733), #12161c);
-  display: grid; place-items: center; color: var(--fg);
-}
-.art svg { width: 2.4rem; height: 2.4rem; fill: currentColor; opacity: .85; }
-.track-meta { min-width: 0; }
-.track-title { font-size: 1.25rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.track-sub { color: var(--muted); font-size: .9rem; margin-top: .2rem; }
-.progress { height: .35rem; background: var(--surface-2); border-radius: 1rem; overflow: hidden; }
-.progress > i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: inherit; }
-.controls { display: flex; align-items: center; justify-content: space-around; gap: .5rem; }
-.ctl { width: 4rem; height: 4rem; border-radius: 50%; display: grid; place-items: center; }
-.ctl:active { background: var(--surface-2); }
-.ctl.play { width: 4.75rem; height: 4.75rem; background: var(--accent); color: var(--accent-ink); }
-.ctl.play svg { width: 2.2rem; height: 2.2rem; }
+.film { width: 21rem; aspect-ratio: 16 / 9; }
+.grid .film { width: auto; }
+.film .thumb { position: absolute; inset: 0; background-size: cover; background-position: center; }
+.film img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.film .shade { position: absolute; inset: 0; background: linear-gradient(to top, rgb(5 4 14 / .92) 0%, rgb(5 4 14 / .2) 55%, transparent 80%); }
+.film .meta { position: absolute; left: 1rem; right: 1rem; bottom: .85rem; }
+.film .meta b { display: block; font-family: var(--font-display); font-weight: 400; font-size: 1.15rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.film .meta span { font-family: var(--font-mono); font-size: .72rem; color: var(--muted); letter-spacing: .06em; }
+.film .play-badge { position: absolute; top: .75rem; right: .75rem; width: 2.6rem; height: 2.6rem; border-radius: 50%; background: rgb(5 4 14 / .55);
+  display: grid; place-items: center; border: 1px solid var(--line-strong); }
+.film .play-badge svg { width: 1.2rem; height: 1.2rem; fill: #fff; }
 
-.shortcut-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .5rem; padding: .9rem; }
+.svc { width: 15rem; aspect-ratio: 16 / 10; display: grid; place-items: center; }
+.grid .svc { width: auto; }
+.svc .glow { position: absolute; inset: -30%; background: radial-gradient(closest-side, var(--c) 0%, transparent 75%); opacity: .32; }
+.svc .logo-mark { position: relative; width: 4.2rem; height: 4.2rem; display: grid; place-items: center; border-radius: 1.1rem; background: var(--c); box-shadow: 0 10px 30px rgb(0 0 0 / .4); }
+.svc .logo-mark svg { width: 58%; height: 58%; fill: #fff; }
+.svc .logo-mark img { width: 64%; height: 64%; border-radius: 22%; }
+.svc .logo-mark.fav { background: #fff; }
+.svc .logo-mark.mono { font-family: var(--font-display); font-weight: 600; font-size: 1.5rem; color: #fff; }
+.svc .name { position: absolute; left: 1rem; bottom: .75rem; font-weight: 500; font-size: .95rem; }
+.svc .tag { position: absolute; right: .8rem; top: .7rem; font-family: var(--font-mono); font-size: .65rem; letter-spacing: .1em; color: var(--violet-hi); text-transform: uppercase; }
+
+.game { width: 15rem; aspect-ratio: 3 / 4; display: flex; flex-direction: column; justify-content: flex-end; padding: 1.1rem; background: var(--g); }
+.grid .game { width: auto; }
+.game .glyph { position: absolute; left: 12%; top: 20%; width: 76%; height: 36%; fill: rgb(255 255 255 / .18); }
+.game .gname { position: relative; font-family: var(--font-display); font-weight: 400; font-size: 1.35rem; line-height: 1.15; }
+.game .gsub { position: relative; color: rgb(255 255 255 / .72); font-size: .85rem; margin-top: .3rem; }
+.game .gtag { position: absolute; left: 1.1rem; top: 1rem; font-family: var(--font-mono); font-size: .68rem; letter-spacing: .1em; padding: .25rem .55rem; border-radius: 1rem; background: rgb(0 0 0 / .35); }
+
+.station { width: 12rem; }
+.grid .station { width: auto; }
+.station .art { aspect-ratio: 1; display: grid; place-items: center; background: var(--g); }
+.station .art svg { width: 30%; height: 30%; fill: rgb(255 255 255 / .85); }
+.station .cap { display: block; padding: .7rem .85rem .8rem; }
+.station .cap b { display: block; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.station .cap span { color: var(--muted); font-size: .8rem; }
+.station.live { border-color: var(--violet-hi); box-shadow: 0 0 26px var(--glow); }
+.eq { display: inline-flex; gap: 2px; align-items: flex-end; height: .8rem; margin-right: .35rem; }
+.eq i { width: 3px; background: var(--violet-hi); animation: eq .9s ease-in-out infinite alternate; }
+.eq i:nth-child(2) { animation-delay: .2s; } .eq i:nth-child(3) { animation-delay: .4s; }
+@keyframes eq { from { height: 20%; } to { height: 100%; } }
 
 /* App tiles */
-.app { display: flex; flex-direction: column; align-items: center; gap: .55rem; padding: .6rem .25rem; border-radius: var(--r-md); position: relative; min-width: 0; }
-.app:active { background: var(--surface-2); }
-.app-ico {
-  width: 4.25rem; height: 4.25rem; border-radius: 50%; display: grid; place-items: center;
-  font-weight: 650; font-size: 1.3rem; color: #0b0d10; letter-spacing: -.02em;
-}
-.app-name { font-size: .9rem; text-align: center; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.app-del {
-  position: absolute; top: .1rem; right: .6rem; width: 2rem; height: 2rem; border-radius: 50%;
-  background: var(--surface-2); border: 1px solid var(--line); display: none; place-items: center;
-}
+.app { display: flex; flex-direction: column; align-items: center; gap: .6rem; padding: .7rem .3rem; border-radius: var(--r-md); position: relative; min-width: 0; width: 8.5rem; }
+.app:hover { background: rgb(125 107 255 / .1); }
+.app-ico { width: 4.6rem; height: 4.6rem; border-radius: 1.3rem; display: grid; place-items: center; font-family: var(--font-display); font-weight: 600; font-size: 1.4rem; color: #fff; box-shadow: 0 8px 22px rgb(0 0 0 / .35); }
+.app-ico svg { width: 54%; height: 54%; fill: #fff; }
+.app-ico img { width: 62%; height: 62%; border-radius: 22%; }
+.app-ico.dark { box-shadow: inset 0 0 0 2px var(--line-strong); }
+.app-ico.fav { background: #fff !important; }
+.app-name { font-size: .9rem; text-align: center; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #ddd7fb; }
+.app-del { position: absolute; top: .2rem; right: .9rem; width: 2rem; height: 2rem; border-radius: 50%; background: var(--panel-solid); border: 1px solid var(--line-strong); display: none; place-items: center; }
 .app-del svg { width: 1.1rem; height: 1.1rem; fill: currentColor; }
 .editing .app-del { display: grid; }
 .editing .app .app-ico { animation: wobble .35s ease-in-out infinite alternate; }
 @keyframes wobble { from { transform: rotate(-3deg); } to { transform: rotate(3deg); } }
+.app-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr)); gap: .75rem; padding: 1.25rem; }
+.app-grid .app { width: auto; }
 
-.page { height: 100%; display: flex; flex-direction: column; gap: .75rem; min-height: 0; }
-.page-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .25rem .5rem; flex-wrap: wrap; }
-.page-head h1 { font-size: 1.9rem; font-weight: 500; margin: 0; }
-.head-actions { display: flex; gap: .5rem; flex-wrap: wrap; }
-.pill {
-  display: inline-flex; align-items: center; gap: .5rem; min-height: 3.5rem; padding: 0 1.4rem;
-  border-radius: 2rem; background: var(--surface-2); font-weight: 500;
-}
-.pill svg { width: 1.4rem; height: 1.4rem; fill: currentColor; }
-.pill.primary { background: var(--accent); color: var(--accent-ink); }
-.pill:active { filter: brightness(1.15); }
-.scroll { overflow-y: auto; min-height: 0; flex: 1; border-radius: var(--r-lg); }
-.app-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); gap: .75rem; padding: 1.25rem; }
-.app-grid .app-ico { width: 5.5rem; height: 5.5rem; font-size: 1.7rem; }
-.app-grid .app-name { font-size: 1rem; }
+/* Music page */
+.music-layout { display: grid; grid-template-columns: minmax(0, 25rem) minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+.player { padding: 1.5rem; display: flex; flex-direction: column; gap: 1.1rem; position: sticky; top: 0; }
+.big-art { aspect-ratio: 1; border-radius: var(--r-lg); background: radial-gradient(80% 80% at 30% 20%, #6d5bff, #1b1350 70%); display: grid; place-items: center; background-size: cover; background-position: center; box-shadow: 0 20px 60px rgb(0 0 0 / .5), 0 0 50px rgb(125 107 255 / .25); }
+.big-art svg { width: 30%; height: 30%; fill: rgb(255 255 255 / .8); }
+.big-art.has-img svg { display: none; }
+.np-title { font-family: var(--font-display); font-weight: 400; font-size: 1.5rem; line-height: 1.25; text-wrap: balance; }
+.np-sub { color: var(--muted); margin-top: .25rem; }
+.progress { height: .4rem; background: rgb(255 255 255 / .1); border-radius: 1rem; overflow: hidden; cursor: pointer; }
+.progress > i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--violet), var(--violet-hi)); border-radius: inherit; }
+.times { display: flex; justify-content: space-between; color: var(--muted); font-family: var(--font-mono); font-size: .8rem; font-variant-numeric: tabular-nums; }
+.controls { display: flex; align-items: center; justify-content: space-around; }
+.ctl { width: 4rem; height: 4rem; border-radius: 50%; display: grid; place-items: center; }
+.ctl:hover { background: rgb(255 255 255 / .06); }
+.ctl svg { width: 2rem; height: 2rem; fill: currentColor; }
+.ctl.play { width: 5rem; height: 5rem; background: var(--violet); color: #fff; box-shadow: 0 0 30px var(--glow); }
+.ctl.play svg { width: 2.4rem; height: 2.4rem; }
+.list { display: flex; flex-direction: column; }
+.list-item { display: flex; align-items: center; gap: .9rem; min-height: 3.6rem; padding: .5rem .75rem; border-radius: .9rem; text-align: left; width: 100%; }
+.list-item:hover { background: rgb(125 107 255 / .1); }
+.list-item svg { fill: var(--muted); width: 1.35rem; height: 1.35rem; flex: none; }
+.list-item .grow { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.list-item.active { color: var(--violet-hi); }
+.list-item.active svg { fill: var(--violet-hi); }
+.km { color: var(--muted); font-size: .88rem; white-space: nowrap; font-variant-numeric: tabular-nums; }
 
-/* Map */
-.map { position: absolute; inset: 0; background-color: #10141a;
-  background-image: linear-gradient(#1b2028 1px, transparent 1px), linear-gradient(90deg, #1b2028 1px, transparent 1px);
-  background-size: 48px 48px; touch-action: none; }
-.map-offline { position: absolute; left: 50%; top: 1.25rem; transform: translateX(-50%); z-index: 700;
-  background: var(--surface); color: var(--muted); font-size: .85rem; padding: .5rem 1rem; border-radius: 2rem; display: none; white-space: nowrap; }
+/* Mini player */
+.mini { position: fixed; z-index: 50; left: 50%; transform: translateX(-50%); bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+  width: min(40rem, calc(100% - 2rem)); display: flex; align-items: center; gap: .9rem; padding: .55rem .6rem .55rem .55rem; border-radius: 1.2rem;
+  background: rgb(20 15 52 / .86); border: 1px solid var(--line-strong); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); box-shadow: 0 16px 50px rgb(0 0 0 / .55); }
+.mini .m-art { width: 3.2rem; height: 3.2rem; border-radius: .7rem; background: radial-gradient(80% 80% at 30% 20%, #6d5bff, #1b1350 70%); background-size: cover; background-position: center; flex: none; display: grid; place-items: center; }
+.mini .m-art svg { width: 45%; height: 45%; fill: #fff; }
+.mini .m-art.has-img svg { display: none; }
+.mini .m-text { flex: 1; min-width: 0; text-align: left; }
+.mini .m-text b { display: block; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mini .m-text span { color: var(--muted); font-size: .82rem; }
+.mini .ctl { width: 3.2rem; height: 3.2rem; }
+.mini .ctl svg { width: 1.6rem; height: 1.6rem; }
+.mini .ctl.play { width: 3.4rem; height: 3.4rem; }
+.nav-chip { position: fixed; z-index: 51; left: max(1rem, env(safe-area-inset-left, 0px)); bottom: max(1rem, env(safe-area-inset-bottom, 0px)); display: flex; align-items: center; gap: .75rem;
+  padding: .7rem 1.1rem .7rem .8rem; border-radius: 1.1rem; background: #146c43; color: #fff; box-shadow: 0 12px 30px rgb(0 0 0 / .45); max-width: 22rem; text-align: left; }
+.nav-chip svg { width: 2.1rem; height: 2.1rem; fill: #fff; flex: none; }
+.nav-chip b { display: block; font-size: 1.2rem; }
+.nav-chip span { display: block; font-size: .85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 16rem; }
+
+/* Player overlay */
+.overlay { position: fixed; inset: 0; z-index: 100; background: #000; display: flex; flex-direction: column; }
+.overlay video, .overlay iframe { flex: 1; width: 100%; min-height: 0; border: 0; background: #000; }
+.ov-bar { display: flex; align-items: center; gap: 1rem; padding: .8rem 1rem; padding-left: max(1rem, env(safe-area-inset-left, 0px)); background: linear-gradient(#000, #0a0820); }
+.ov-bar b { flex: 1; font-family: var(--font-display); font-weight: 400; font-size: 1.2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Sheet */
+.sheet-backdrop { position: fixed; inset: 0; background: rgb(3 2 10 / .7); display: grid; place-items: center; z-index: 90; padding: 1rem; backdrop-filter: blur(6px); }
+.sheet { width: min(38rem, 100%); max-height: 90%; overflow: auto; background: var(--panel-solid); border: 1px solid var(--line-strong); border-radius: var(--r-xl); padding: 1.75rem; display: flex; flex-direction: column; gap: 1rem; box-shadow: 0 30px 80px rgb(0 0 0 / .6); }
+.sheet h2 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: 1.6rem; }
+.sheet .err { color: var(--warn); font-size: .9rem; min-height: 1.2em; }
+.sheet-actions { display: flex; justify-content: flex-end; gap: .6rem; flex-wrap: wrap; }
+.field { width: 100%; min-height: 3.6rem; border-radius: .9rem; border: 1px solid var(--line-strong); background: rgb(8 6 24 / .7); padding: 0 1.1rem; font-size: 1.05rem; user-select: text; }
+.field:focus { outline: none; border-color: var(--violet-hi); box-shadow: 0 0 0 3px rgb(125 107 255 / .25); }
+
+/* Map page */
+.map-layout { display: grid; grid-template-columns: minmax(0, 1fr) 25rem; gap: 1rem; height: 100%; }
+.map-card { position: relative; overflow: hidden; border-radius: var(--r-xl); border: 1px solid var(--line); }
+.map-host { position: absolute; inset: 0; }
+.nav-panel { padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem; overflow-y: auto; }
+.go-row { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
+.route-time { font-family: var(--font-display); font-weight: 300; font-size: 2.4rem; color: var(--ok); }
+.route-dest { font-size: 1.1rem; font-weight: 500; }
+.result-item { align-items: flex-start; }
+.result-item .grow { white-space: normal; }
+.result-item small { display: block; color: var(--muted); font-size: .82rem; margin-top: .15rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.step-ico { width: 1.6rem !important; height: 1.6rem !important; fill: var(--fg) !important; flex: none; }
+.map { position: absolute; inset: 0; background-color: #0a0820;
+  background-image: linear-gradient(#17123a 1px, transparent 1px), linear-gradient(90deg, #17123a 1px, transparent 1px); background-size: 48px 48px; touch-action: none; }
+.map-offline { position: absolute; left: 50%; top: 1.25rem; transform: translateX(-50%); z-index: 700; background: var(--panel-solid); color: var(--muted); font-size: .85rem; padding: .5rem 1rem; border-radius: 2rem; display: none; white-space: nowrap; }
 .map.offline .map-offline { display: block; }
 .map-overlay { position: absolute; z-index: 800; display: flex; gap: .5rem; }
-.map-search-pill { top: 1rem; left: 1rem; right: 1rem; }
-.search-fake {
-  flex: 1; min-height: 3.75rem; display: flex; align-items: center; gap: .75rem; padding: 0 1.25rem;
-  background: var(--surface); border-radius: 2rem; color: var(--muted); box-shadow: 0 6px 18px rgb(0 0 0 / .35); text-align: left;
-}
 .speed-bubble { left: 1rem; bottom: 1rem; }
-.speed {
-  width: 6rem; height: 6rem; border-radius: 50%; background: var(--surface); border: 3px solid var(--line);
-  display: grid; place-content: center; text-align: center; box-shadow: 0 6px 18px rgb(0 0 0 / .35);
-}
-.speed b { font-family: var(--font-num); font-size: 2rem; line-height: 1; font-variant-numeric: tabular-nums; }
-.speed small { color: var(--muted); font-size: .75rem; }
+.speed { width: 6rem; height: 6rem; border-radius: 50%; background: var(--panel-solid); border: 2px solid var(--line-strong); display: grid; place-content: center; text-align: center; box-shadow: 0 0 30px var(--glow); }
+.speed b { font-family: var(--font-display); font-weight: 300; font-size: 2.1rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.speed small { color: var(--muted); font-size: .72rem; }
 .map-btns { right: 1rem; bottom: 1rem; flex-direction: column; }
-.fab { width: 3.75rem; height: 3.75rem; border-radius: 50%; background: var(--surface); display: grid; place-items: center; box-shadow: 0 6px 18px rgb(0 0 0 / .35); }
-.fab.on { color: var(--accent); }
-.fab:active { background: var(--surface-2); }
-
-.nav-layout { display: grid; grid-template-columns: minmax(0, 1fr) 24rem; gap: .75rem; height: 100%; }
-.nav-panel { display: flex; flex-direction: column; gap: 1rem; overflow-y: auto; }
-.field {
-  width: 100%; min-height: 3.75rem; border-radius: 1rem; border: 2px solid var(--line); background: var(--surface-2);
-  padding: 0 1.1rem; font-size: 1.1rem; user-select: text;
-}
-.field:focus { outline: none; border-color: var(--accent); }
-.go-row { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
-.go-row .pill { justify-content: center; padding: 0 .75rem; }
-.pill[aria-disabled="true"] { opacity: .4; pointer-events: none; }
-.list { display: flex; flex-direction: column; }
-.list-item { display: flex; align-items: center; gap: .9rem; min-height: 3.75rem; padding: .5rem .5rem; border-radius: .9rem; text-align: left; width: 100%; }
-.list-item:active { background: var(--surface-2); }
-.list-item svg { fill: var(--muted); width: 1.4rem; height: 1.4rem; }
-.list-item .grow { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.list-item.active { color: var(--accent); }
-.list-item.active svg { fill: var(--accent); }
-.hint { color: var(--muted); font-size: .9rem; line-height: 1.5; }
-
-/* Media page */
-.media-layout { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: .75rem; height: 100%; }
-.player { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.25rem; text-align: center; }
-.player .art { width: 13rem; height: 13rem; border-radius: 1.75rem; }
-.player .art svg { width: 5rem; height: 5rem; }
-.player .track-title { font-size: 1.7rem; white-space: normal; text-wrap: balance; }
-.player .progress { width: 100%; max-width: 32rem; height: .55rem; cursor: pointer; }
-.times { width: 100%; max-width: 32rem; display: flex; justify-content: space-between; color: var(--muted); font-family: var(--font-num); font-size: .85rem; font-variant-numeric: tabular-nums; }
-.player .controls { width: 100%; max-width: 26rem; }
-.player .ctl { width: 5rem; height: 5rem; }
-.player .ctl svg { width: 2.25rem; height: 2.25rem; }
-.player .ctl.play { width: 6rem; height: 6rem; }
-.player .ctl.play svg { width: 2.8rem; height: 2.8rem; }
-.side-panel { display: flex; flex-direction: column; gap: 1rem; overflow-y: auto; }
-.services { display: grid; grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr)); gap: .5rem; }
+.fab { width: 3.6rem; height: 3.6rem; border-radius: 50%; background: var(--panel-solid); border: 1px solid var(--line-strong); display: grid; place-items: center; box-shadow: 0 6px 18px rgb(0 0 0 / .4); }
+.fab.on { color: var(--violet-hi); }
+.nav-banner { top: 1rem; left: 1rem; right: 1rem; align-items: center; gap: 1rem; padding: .9rem 1rem .9rem 1.25rem; border-radius: 1.25rem; background: #146c43; color: #fff; box-shadow: 0 8px 24px rgb(0 0 0 / .4); }
+.nav-banner .turn { width: 3.5rem; height: 3.5rem; fill: #fff; flex: none; transition: transform .2s; }
+.nav-banner .bt { flex: 1; min-width: 0; }
+.nav-banner b { display: block; font-size: 1.9rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.nav-banner span { display: block; font-size: 1.1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nav-banner small { display: block; opacity: .85; font-size: .9rem; margin-top: .2rem; }
+.nav-banner .fab { background: rgb(0 0 0 / .25); color: #fff; box-shadow: none; border: 0; }
 
 /* Settings */
-.settings { display: flex; flex-direction: column; gap: .75rem; max-width: 52rem; padding: .25rem; }
-.row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 4.5rem; padding: .5rem 1.25rem; flex-wrap: wrap; }
-.row-label b { display: block; font-weight: 500; font-size: 1.1rem; }
-.row-label span { color: var(--muted); font-size: .9rem; }
-.switch { width: 4.25rem; height: 2.4rem; border-radius: 2rem; background: var(--surface-2); border: 2px solid var(--line); position: relative; flex: none; }
-.switch::after { content: ""; position: absolute; top: .25rem; left: .3rem; width: 1.6rem; height: 1.6rem; border-radius: 50%; background: var(--muted); transition: transform .15s, background .15s; }
-.switch[aria-checked="true"] { background: color-mix(in srgb, var(--accent) 35%, var(--surface-2)); border-color: var(--accent); }
-.switch[aria-checked="true"]::after { transform: translateX(1.75rem); background: var(--accent); }
-.swatches { display: flex; gap: .6rem; }
-.swatch { width: 3rem; height: 3rem; border-radius: 50%; border: 3px solid transparent; }
-.swatch[aria-pressed="true"] { border-color: var(--fg); }
+.settings { display: flex; flex-direction: column; gap: .75rem; max-width: 52rem; }
+.srow { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 4.6rem; padding: .6rem 1.4rem; flex-wrap: wrap; }
+.srow b { display: block; font-weight: 500; font-size: 1.08rem; }
+.srow span { color: var(--muted); font-size: .9rem; }
+.switch { width: 4.25rem; height: 2.4rem; border-radius: 2rem; background: rgb(255 255 255 / .08); border: 1px solid var(--line-strong); position: relative; flex: none; }
+.switch::after { content: ""; position: absolute; top: .3rem; left: .3rem; width: 1.6rem; height: 1.6rem; border-radius: 50%; background: var(--muted); transition: transform .15s, background .15s; }
+.switch[aria-checked="true"] { background: rgb(125 107 255 / .35); border-color: var(--violet-hi); }
+.switch[aria-checked="true"]::after { transform: translateX(1.8rem); background: var(--violet-hi); }
 
-/* Dialog + toast */
-.sheet-backdrop { position: fixed; inset: 0; background: rgb(0 0 0 / .6); display: grid; place-items: center; z-index: 2000; padding: 1rem; }
-.sheet { width: min(34rem, 100%); background: var(--surface); border-radius: var(--r-lg); padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
-.sheet h2 { margin: 0; font-weight: 500; font-size: 1.4rem; }
-.sheet .err { color: var(--warn); font-size: .9rem; min-height: 1.2em; }
-.sheet-actions { display: flex; justify-content: flex-end; gap: .5rem; }
-.toast { position: fixed; left: 50%; bottom: max(1.5rem, env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 1rem); opacity: 0;
-  background: var(--fg); color: var(--bg); padding: .8rem 1.4rem; border-radius: 2rem; z-index: 3000; transition: .2s; pointer-events: none; font-weight: 500; }
+.toast { position: fixed; left: 50%; top: 5.5rem; transform: translate(-50%, -1rem); opacity: 0; background: var(--fg); color: var(--violet-ink);
+  padding: .8rem 1.4rem; border-radius: 2rem; z-index: 200; transition: .2s; pointer-events: none; font-weight: 500; }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
+.notice { padding: 1.1rem 1.3rem; display: flex; gap: 1rem; align-items: flex-start; margin-top: 1.5rem; }
+.notice svg { width: 1.5rem; height: 1.5rem; fill: var(--violet-hi); flex: none; margin-top: .15rem; }
 
 /* Leaflet 1.9.4 stylesheet */
 /* required styles */
@@ -996,55 +1069,31 @@ svg.leaflet-image-layer.leaflet-interactive path {
 		}
 	}
 
-/* Map extras (Leaflet's own stylesheet is inlined above or loaded by the standalone build) */
-.map.leaflet-container { background-color: #10141a; font-family: var(--font-ui); }
-.osm-dark .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.85) contrast(.9); }
-.leaflet-control-attribution { font-size: 10px; color: var(--muted) !important; background: rgb(11 13 16 / .7) !important; }
+.map.leaflet-container { background-color: #0a0820; font-family: var(--font-ui); }
+.osm-dark .leaflet-tile-pane { filter: invert(1) hue-rotate(200deg) brightness(.8) contrast(.9) saturate(.7); }
+.leaflet-control-attribution { font-size: 10px; color: var(--muted) !important; background: rgb(5 4 14 / .7) !important; }
 .leaflet-control-attribution a { color: var(--muted) !important; }
 .me, .dest-pin { background: none; border: 0; }
-.me-dot { width: 28px; height: 28px; border-radius: 50%; background: var(--accent); border: 4px solid #fff; box-shadow: 0 0 0 10px color-mix(in srgb, var(--accent) 25%, transparent); }
-.dest-pin div { width: 34px; height: 34px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: #ea4335; border: 3px solid #fff; box-shadow: 0 4px 10px rgb(0 0 0 / .4); }
+.me-dot { width: 28px; height: 28px; border-radius: 50%; background: var(--violet); border: 4px solid #fff; box-shadow: 0 0 0 10px rgb(125 107 255 / .3), 0 0 24px var(--glow); }
+.dest-pin div { width: 34px; height: 34px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: #ff5f8a; border: 3px solid #fff; box-shadow: 0 4px 10px rgb(0 0 0 / .4); }
 
-/* Turn-by-turn banner on the map */
-.nav-banner { top: 1rem; left: 1rem; right: 1rem; align-items: center; gap: 1rem; padding: .9rem 1rem .9rem 1.25rem; border-radius: 1.25rem;
-  background: #146c43; color: #fff; box-shadow: 0 8px 24px rgb(0 0 0 / .4); }
-.nav-banner .turn { width: 3.5rem; height: 3.5rem; fill: #fff; flex: none; transition: transform .2s; }
-.nav-banner .bt { flex: 1; min-width: 0; }
-.nav-banner b { display: block; font-size: 1.9rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
-.nav-banner span { display: block; font-size: 1.1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.nav-banner small { display: block; opacity: .85; font-size: .9rem; margin-top: .2rem; }
-.nav-banner .fab { background: rgb(0 0 0 / .25); color: #fff; box-shadow: none; }
-
-/* Route panel */
-.route-time { font-size: 2.2rem; font-weight: 500; color: var(--ok); }
-.route-dest { font-size: 1.1rem; font-weight: 500; }
-.result-item { align-items: flex-start; }
-.result-item .grow { white-space: normal; }
-.result-item small { display: block; color: var(--muted); font-size: .85rem; margin-top: .15rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.result-item .km { color: var(--muted); font-size: .9rem; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.step-ico { width: 1.6rem !important; height: 1.6rem !important; fill: var(--fg) !important; flex: none; }
-
-/* Brand icons */
-.app-ico svg { width: 52%; height: 52%; fill: #fff; }
-.app-ico img { width: 62%; height: 62%; border-radius: 22%; }
-.app-ico.dark { box-shadow: inset 0 0 0 2px var(--line); }
-.app-ico.fav { background: #fff !important; }
-.art { background-size: cover; background-position: center; }
-.art.has-img svg { display: none; }
-
-/* Phone / narrow */
-@media (max-width: 760px) {
-  body { overflow: auto; }
-  .shell { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; height: auto; min-height: 100%; }
-  .rail { flex-direction: row; justify-content: space-around; order: 2; padding: .4rem; position: sticky; bottom: .5rem; z-index: 900; }
-  .rail-time, .rail-spacer { display: none; }
-  .navbtn { width: 3.5rem; height: 3.5rem; }
-  .home, .media-layout, .nav-layout { grid-template-columns: minmax(0, 1fr); height: auto; }
+@media (max-width: 900px) {
+  .music-layout, .map-layout { grid-template-columns: minmax(0, 1fr); }
+  .player { position: static; }
+  .map-layout { height: auto; }
+  .view.fill { overflow-y: auto; }
   .map-card { height: 55vh; }
-  .view.nav .map-card { height: 50vh; }
-  .page { height: auto; }
-  .scroll { overflow: visible; }
-  .big-time { font-size: 2.8rem; }
+  .wx { display: none; }
+}
+@media (max-width: 640px) {
+  .topbar { flex-wrap: wrap; gap: .6rem; }
+  .tabs { order: 3; flex-basis: 100%; justify-content: flex-start; }
+  .logo { flex: 1; }
+  .hero-copy { padding: 1.25rem; }
+  .hero-side { display: none; }
+  .film { width: 17rem; }
+  .svc, .game { width: 12rem; }
+  .page-title { font-size: 2rem; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 </style>
@@ -1053,9 +1102,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="i-home" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></symbol>
+  <symbol id="i-movie" viewBox="0 0 24 24"><path d="M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4h-4z"/></symbol>
+  <symbol id="i-music" viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></symbol>
+  <symbol id="i-game" viewBox="0 0 24 24"><path d="M21.58 16.09l-1.09-7.66A3.996 3.996 0 0016.53 5H7.47C5.48 5 3.79 6.46 3.51 8.43l-1.09 7.66C2.2 17.63 3.39 19 4.94 19c.68 0 1.32-.27 1.8-.75L9 16h6l2.25 2.25c.48.48 1.13.75 1.8.75 1.56 0 2.75-1.37 2.53-2.91zM11 11H9v2H8v-2H6v-1h2V8h1v2h2v1zm4-1c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm2 3c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/></symbol>
   <symbol id="i-apps" viewBox="0 0 24 24"><path d="M4 8h4V4H4v4zm6 12h4v-4h-4v4zm-6 0h4v-4H4v4zm0-6h4v-4H4v4zm6 0h4v-4h-4v4zm6-10v4h4V4h-4zm-6 4h4V4h-4v4zm6 6h4v-4h-4v4zm0 6h4v-4h-4v4z"/></symbol>
   <symbol id="i-nav" viewBox="0 0 24 24"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></symbol>
-  <symbol id="i-music" viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></symbol>
   <symbol id="i-gear" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.488.488 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></symbol>
   <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></symbol>
   <symbol id="i-pause" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></symbol>
@@ -1073,61 +1124,189 @@ svg.leaflet-image-layer.leaflet-interactive path {
   <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12l1.41 1.41L11 7.83V20h2V7.83l5.58 5.59L20 12l-8-8-8 8z"/></symbol>
   <symbol id="i-flag" viewBox="0 0 24 24"><path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"/></symbol>
   <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 010-5 2.5 2.5 0 010 5z"/></symbol>
+  <symbol id="i-radio" viewBox="0 0 24 24"><path d="M3.24 6.15C2.51 6.43 2 7.17 2 8v12a2 2 0 002 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2H8.3l8.26-3.34L15.88 1 3.24 6.15zM7 20c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm13-8h-2v-2h-2v2H4V8h16v4z"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></symbol>
+  <symbol id="i-open" viewBox="0 0 24 24"><path d="M19 19H5V5h7V3H5a2 2 0 00-2 2v14a2 2 0 002 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></symbol>
 </svg>
 
+<canvas id="stars" aria-hidden="true"></canvas>
+<div class="nebula" aria-hidden="true"></div>
+
 <div class="shell">
-  <nav class="rail" aria-label="เมนูหลัก">
-    <div class="rail-time" id="railTime">--:--</div>
-    <button class="navbtn" data-go="home" aria-current="page" aria-label="หน้าหลัก"><svg class="i"><use href="#i-home"/></svg></button>
-    <button class="navbtn" data-go="nav" aria-label="นำทาง"><svg class="i"><use href="#i-nav"/></svg></button>
-    <button class="navbtn" data-go="media" aria-label="เพลง"><svg class="i"><use href="#i-music"/></svg></button>
-    <button class="navbtn" data-go="apps" aria-label="แอปทั้งหมด"><svg class="i"><use href="#i-apps"/></svg></button>
-    <div class="rail-spacer"></div>
-    <button class="navbtn" data-go="settings" aria-label="ตั้งค่า"><svg class="i"><use href="#i-gear"/></svg></button>
-  </nav>
+  <header class="topbar">
+    <div class="logo" aria-label="Tesaro">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c4b8ff"/><stop offset="1" stop-color="#7d6bff"/></linearGradient></defs>
+        <circle cx="16" cy="16" r="7" fill="url(#lg)"/><ellipse cx="16" cy="16" rx="14.5" ry="5" fill="none" stroke="#c4b8ff" stroke-width="1.4" transform="rotate(-22 16 16)" opacity=".85"/></svg>
+      TESARO
+    </div>
+    <nav class="tabs" aria-label="เมนูหลัก">
+      <button class="tab" data-go="home" aria-current="page"><svg><use href="#i-home"/></svg>หน้าแรก</button>
+      <button class="tab" data-go="movies"><svg><use href="#i-movie"/></svg>หนัง</button>
+      <button class="tab" data-go="music"><svg><use href="#i-music"/></svg>เพลง</button>
+      <button class="tab" data-go="games"><svg><use href="#i-game"/></svg>เกม</button>
+      <button class="tab" data-go="apps"><svg><use href="#i-apps"/></svg>แอป</button>
+      <button class="tab" data-go="map"><svg><use href="#i-nav"/></svg>แผนที่</button>
+    </nav>
+    <div class="status">
+      <div class="wx"><b id="wTemp">--°</b><span id="wDesc">อากาศ</span></div>
+      <div class="clock" id="clock">--:--</div>
+      <button class="icon-btn" data-go="settings" aria-label="ตั้งค่า"><svg class="i"><use href="#i-gear"/></svg></button>
+    </div>
+  </header>
 
   <main>
     <!-- Home -->
     <section class="view" data-view="home">
-      <div class="home">
-        <div class="card map-card"><div class="map-host" id="homeMapHost"></div></div>
-        <div class="home-side">
-          <div class="card clock-card">
-            <div>
-              <div class="big-time" id="bigTime">--:--</div>
-              <div class="date-line" id="dateLine"></div>
-            </div>
-            <div class="weather">
-              <div class="weather-temp" id="wTemp">--°</div>
-              <div class="weather-desc" id="wDesc">กำลังโหลดอากาศ</div>
-            </div>
+      <div class="hero" id="hero">
+        <div class="hero-poster" id="heroPoster"></div>
+        <div class="planet" aria-hidden="true"></div>
+        <div class="hero-side">Entertainment<br>in orbit</div>
+        <div class="hero-copy">
+          <div class="eyebrow" id="heroEyebrow">ภาพยนตร์แนะนำ · ดูฟรีในแอป</div>
+          <h1 id="heroTitle">Sintel</h1>
+          <div class="chips" id="heroChips"></div>
+          <p id="heroDesc"></p>
+          <div class="hero-actions">
+            <button class="btn primary" id="heroPlay"><svg><use href="#i-play"/></svg>เล่นเลย</button>
+            <button class="btn" data-go="movies">หนังทั้งหมด</button>
           </div>
-          <div class="card media-card">
-            <div class="media-top">
-              <div class="art"><svg><use href="#i-music"/></svg></div>
-              <div class="track-meta">
-                <div class="eyebrow">กำลังเล่น</div>
-                <div class="track-title" data-bind="title">ยังไม่มีเพลง</div>
-                <div class="track-sub" data-bind="sub">แตะเพื่อเพิ่มไฟล์เพลง</div>
-              </div>
-            </div>
-            <div class="progress"><i data-bind="bar"></i></div>
-            <div class="controls">
-              <button class="ctl" data-act="prev" aria-label="เพลงก่อนหน้า"><svg class="i"><use href="#i-prev"/></svg></button>
-              <button class="ctl play" data-act="toggle" aria-label="เล่นหรือหยุด"><svg class="i"><use href="#i-play" data-bind="playicon"/></svg></button>
-              <button class="ctl" data-act="next" aria-label="เพลงถัดไป"><svg class="i"><use href="#i-next"/></svg></button>
-            </div>
+        </div>
+        <div class="dots" id="heroDots"></div>
+      </div>
+
+      <section class="row">
+        <div class="row-head"><h2>หนังและสารคดี<small>ดูได้ทันที</small></h2><button class="see-all" data-go="movies">ดูทั้งหมด</button></div>
+        <div class="rail" id="homeFilms"></div>
+      </section>
+      <section class="row">
+        <div class="row-head"><h2>สตรีมมิ่ง<small>เปิดบริการ</small></h2><button class="see-all" data-go="movies">ดูทั้งหมด</button></div>
+        <div class="rail" id="homeServices"></div>
+      </section>
+      <section class="row">
+        <div class="row-head"><h2>วิทยุออนไลน์<small>Live</small></h2><button class="see-all" data-go="music">เพลงทั้งหมด</button></div>
+        <div class="rail" id="homeRadio"></div>
+      </section>
+      <section class="row">
+        <div class="row-head"><h2>เกม<small>เล่นบนเบราว์เซอร์</small></h2><button class="see-all" data-go="games">เกมทั้งหมด</button></div>
+        <div class="rail" id="homeGames"></div>
+      </section>
+      <section class="row">
+        <div class="row-head"><h2>แอปของคุณ</h2><button class="see-all" data-go="apps">จัดการแอป</button></div>
+        <div class="rail" id="homeApps"></div>
+      </section>
+    </section>
+
+    <!-- Movies -->
+    <section class="view" data-view="movies" hidden>
+      <div class="page-head">
+        <div><div class="eyebrow">ภาพยนตร์ · ซีรีส์ · วิดีโอ</div><h1 class="page-title">หนัง</h1></div>
+        <div class="hero-actions">
+          <button class="btn" id="openTube"><svg><use href="#i-play"/></svg>SmartTube</button>
+          <label class="btn primary" for="videoIn"><svg><use href="#i-folder"/></svg>เปิดวิดีโอจาก USB</label>
+          <input id="videoIn" type="file" accept="video/*" multiple hidden>
+        </div>
+      </div>
+      <section class="row" id="myVideosRow" hidden>
+        <div class="row-head"><h2>วิดีโอของฉัน<small>จากเครื่อง</small></h2></div>
+        <div class="rail" id="myVideos"></div>
+      </section>
+      <section class="row">
+        <div class="row-head"><h2>บริการสตรีมมิ่ง</h2></div>
+        <div class="grid services" id="allServices"></div>
+      </section>
+      <section class="row">
+        <div class="row-head"><h2>ดูฟรีในแอป<small>หนังสั้นและสารคดีรถยนต์</small></h2></div>
+        <div class="grid films" id="allFilms"></div>
+      </section>
+      <p class="hint" style="margin-top:1.5rem">Tesla ให้เล่นวิดีโอได้เฉพาะตอนจอดรถ</p>
+    </section>
+
+    <!-- Music -->
+    <section class="view" data-view="music" hidden>
+      <div class="page-head">
+        <div><div class="eyebrow">เพลง · วิทยุ · พอดแคสต์</div><h1 class="page-title">เพลง</h1></div>
+        <div class="hero-actions">
+          <label class="btn primary" for="fileIn"><svg><use href="#i-folder"/></svg>เพิ่มเพลงจาก USB</label>
+          <input id="fileIn" type="file" accept="audio/*" multiple hidden>
+        </div>
+      </div>
+      <div class="music-layout">
+        <div class="panel player">
+          <div class="big-art" data-art><svg><use href="#i-music"/></svg></div>
+          <div>
+            <div class="np-title" data-bind="title">ยังไม่ได้เล่นอะไร</div>
+            <div class="np-sub" data-bind="sub">เลือกสถานีวิทยุ หรือเพิ่มไฟล์เพลง</div>
           </div>
-          <div class="card shortcut-row" id="homeApps"></div>
+          <div class="progress" id="seekBar"><i data-bind="bar"></i></div>
+          <div class="times"><span data-bind="cur">0:00</span><span data-bind="dur">0:00</span></div>
+          <div class="controls">
+            <button class="ctl" data-act="prev" aria-label="ก่อนหน้า"><svg><use href="#i-prev"/></svg></button>
+            <button class="ctl play" data-act="toggle" aria-label="เล่นหรือหยุด"><svg><use href="#i-play" data-bind="playicon"/></svg></button>
+            <button class="ctl" data-act="next" aria-label="ถัดไป"><svg><use href="#i-next"/></svg></button>
+          </div>
+        </div>
+        <div style="min-width:0">
+          <section class="row" style="margin-top:0">
+            <div class="row-head"><h2>วิทยุออนไลน์<small>SomaFM · ไม่มีโฆษณา</small></h2></div>
+            <div class="rail" id="allRadio"></div>
+          </section>
+          <section class="row">
+            <div class="row-head"><h2>บริการเพลง</h2></div>
+            <div class="rail" id="musicServices"></div>
+          </section>
+          <section class="row">
+            <div class="row-head"><h2>เพลงในเครื่อง</h2></div>
+            <div class="panel" style="padding:.5rem"><div class="list" id="playlist"></div></div>
+          </section>
         </div>
       </div>
     </section>
 
-    <!-- Navigation -->
-    <section class="view nav" data-view="nav" hidden>
-      <div class="nav-layout">
-        <div class="card map-card"><div class="map-host" id="navMapHost"></div></div>
-        <div class="card nav-panel">
+    <!-- Games -->
+    <section class="view" data-view="games" hidden>
+      <div class="page-head">
+        <div><div class="eyebrow">คอนโซลบนเบราว์เซอร์</div><h1 class="page-title">เกม</h1>
+          <p class="lead">เลือกเครื่องเกม แล้วเปิดไฟล์เกมของคุณจาก USB ตัวเล่นเกมทำงานในเบราว์เซอร์ทั้งหมด ไม่ต้องติดตั้งอะไรเพิ่ม และใช้จอยที่ต่อ USB ได้ถ้าเบราว์เซอร์มองเห็น</p></div>
+      </div>
+      <div class="grid games" id="allGames"></div>
+      <div class="panel notice"><svg><use href="#i-info"/></svg>
+        <p class="hint"><b style="color:var(--fg)">PS2</b> ใช้ตัวเล่น Play! ซึ่งยังเป็นรุ่นทดลอง เกมเบาๆ บางเกมเล่นได้ แต่เกมใหญ่อาจช้าหรือเปิดไม่ขึ้น
+        <b style="color:var(--fg)">PSP</b> ต้องการเครื่องแรงและอาจช้าในรถบางรุ่น ส่วน PS1, N64, GBA, SNES, NES, Mega Drive และ NDS ลื่นกว่ามาก
+        ไฟล์เกมต้องเป็นของคุณเอง Tesaro ไม่มีเกมให้ดาวน์โหลด</p></div>
+    </section>
+
+    <!-- Apps -->
+    <section class="view" data-view="apps" hidden>
+      <div class="page-head">
+        <div><div class="eyebrow">ทางลัด</div><h1 class="page-title">แอป</h1></div>
+        <div class="hero-actions">
+          <button class="btn" id="editApps"><svg><use href="#i-edit"/></svg><span>จัดการ</span></button>
+          <button class="btn primary" id="addApp"><svg><use href="#i-add"/></svg>เพิ่มทางลัด</button>
+        </div>
+      </div>
+      <div class="panel"><div class="app-grid" id="appGrid"></div></div>
+    </section>
+
+    <!-- Map -->
+    <section class="view fill" data-view="map" hidden>
+      <div class="map-layout">
+        <div class="map-card"><div class="map-host" id="navMapHost">
+          <div class="map" id="map"><div class="map-offline">แผนที่โหลดไม่ได้ ตรวจสอบอินเทอร์เน็ต</div></div>
+          <div class="map-overlay nav-banner" id="navBanner" hidden>
+            <svg class="turn" id="bIcon" viewBox="0 0 24 24"><use href="#i-arrow"/></svg>
+            <div class="bt"><b id="bDist"></b><span id="bText"></span><small id="bEta"></small></div>
+            <button class="fab" id="stopNav" aria-label="หยุดนำทาง"><svg class="i"><use href="#i-close"/></svg></button>
+          </div>
+          <div class="map-overlay speed-bubble"><div class="speed"><b id="speedVal">–</b><small>กม./ชม.</small></div></div>
+          <div class="map-overlay map-btns">
+            <button class="fab" id="zoomIn" aria-label="ซูมเข้า"><svg class="i"><use href="#i-plusz"/></svg></button>
+            <button class="fab" id="zoomOut" aria-label="ซูมออก"><svg class="i"><use href="#i-minus"/></svg></button>
+            <button class="fab on" id="follow" aria-label="ตามตำแหน่งรถ"><svg class="i"><use href="#i-loc"/></svg></button>
+          </div>
+        </div></div>
+        <div class="panel nav-panel">
           <form id="navForm" autocomplete="off">
             <input class="field" id="dest" type="search" placeholder="ค้นหาสถานที่ เช่น สยามพารากอน" enterkeyhint="search">
           </form>
@@ -1135,132 +1314,62 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <div class="list" id="results"></div>
           <div id="routeBox" hidden>
             <div style="display:flex;flex-direction:column;gap:.9rem">
-              <div>
-                <div class="route-time" id="rTime"></div>
-                <div class="hint" id="rMeta"></div>
-              </div>
+              <div><div class="route-time" id="rTime"></div><div class="hint" id="rMeta"></div></div>
               <div class="route-dest" id="rDest"></div>
               <div class="go-row">
-                <button class="pill primary" id="startNav" style="justify-content:center"><svg><use href="#i-nav"/></svg><span>เริ่มนำทาง</span></button>
-                <button class="pill" id="clearRoute" style="justify-content:center">ยกเลิก</button>
+                <button class="btn primary" id="startNav"><svg><use href="#i-nav"/></svg><span>เริ่มนำทาง</span></button>
+                <button class="btn" id="clearRoute">ยกเลิก</button>
               </div>
               <div class="go-row">
-                <a class="pill" id="goGmaps" target="_blank" rel="noopener">Google Maps</a>
-                <a class="pill" id="goWaze" target="_blank" rel="noopener">Waze</a>
+                <a class="btn" id="goGmaps" target="_blank" rel="noopener">Google Maps</a>
+                <a class="btn" id="goWaze" target="_blank" rel="noopener">Waze</a>
               </div>
               <div class="eyebrow">ขั้นตอนเส้นทาง</div>
               <div class="list" id="steps"></div>
             </div>
           </div>
-          <div id="recentBox">
-            <div class="eyebrow">ล่าสุด</div>
-            <div class="list" id="recentList"></div>
-          </div>
+          <div id="recentBox"><div class="eyebrow" style="margin-bottom:.4rem">ล่าสุด</div><div class="list" id="recentList"></div></div>
         </div>
-      </div>
-    </section>
-
-    <!-- Media -->
-    <section class="view" data-view="media" hidden>
-      <div class="media-layout">
-        <div class="card player">
-          <div class="art"><svg><use href="#i-music"/></svg></div>
-          <div>
-            <div class="track-title" data-bind="title">ยังไม่มีเพลง</div>
-            <div class="track-sub" data-bind="sub">แตะเพื่อเพิ่มไฟล์เพลง</div>
-          </div>
-          <div class="progress" id="seekBar"><i data-bind="bar"></i></div>
-          <div class="times"><span data-bind="cur">0:00</span><span data-bind="dur">0:00</span></div>
-          <div class="controls">
-            <button class="ctl" data-act="prev" aria-label="เพลงก่อนหน้า"><svg class="i"><use href="#i-prev"/></svg></button>
-            <button class="ctl play" data-act="toggle" aria-label="เล่นหรือหยุด"><svg class="i"><use href="#i-play" data-bind="playicon"/></svg></button>
-            <button class="ctl" data-act="next" aria-label="เพลงถัดไป"><svg class="i"><use href="#i-next"/></svg></button>
-          </div>
-        </div>
-        <div class="card side-panel">
-          <label class="pill primary" for="fileIn" style="align-self:flex-start"><svg><use href="#i-add"/></svg>เพิ่มไฟล์เพลง</label>
-          <input id="fileIn" type="file" accept="audio/*" multiple hidden>
-          <div class="eyebrow">คิวเพลง</div>
-          <div class="list" id="playlist"></div>
-          <div class="eyebrow">บริการเพลงออนไลน์</div>
-          <div class="services" id="services"></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Apps -->
-    <section class="view" data-view="apps" hidden>
-      <div class="page">
-        <div class="page-head">
-          <h1>แอป</h1>
-          <div class="head-actions">
-            <button class="pill" id="editApps"><svg><use href="#i-edit"/></svg><span>จัดการ</span></button>
-            <button class="pill primary" id="addApp"><svg><use href="#i-add"/></svg>เพิ่มทางลัด</button>
-          </div>
-        </div>
-        <div class="card scroll" style="padding:0"><div class="app-grid" id="appGrid"></div></div>
       </div>
     </section>
 
     <!-- Settings -->
     <section class="view" data-view="settings" hidden>
-      <div class="page">
-        <div class="page-head"><h1>ตั้งค่า</h1></div>
-        <div class="scroll">
-          <div class="settings">
-            <div class="card row">
-              <div class="row-label"><b>นาฬิกา 24 ชั่วโมง</b><span>ปิดเพื่อแสดงแบบ 12 ชั่วโมง</span></div>
-              <button class="switch" role="switch" id="sw24" aria-label="นาฬิกา 24 ชั่วโมง"></button>
-            </div>
-            <div class="card row">
-              <div class="row-label"><b>ตัวอักษรใหญ่</b><span>ขยายปุ่มและข้อความให้กดง่ายขึ้นขณะจอดรถ</span></div>
-              <button class="switch" role="switch" id="swBig" aria-label="ตัวอักษรใหญ่"></button>
-            </div>
-            <div class="card row">
-              <div class="row-label"><b>เสียงนำทาง</b><span>พูดบอกทางเป็นภาษาไทย ถ้าเบราว์เซอร์รองรับ</span></div>
-              <button class="switch" role="switch" id="swVoice" aria-label="เสียงนำทาง"></button>
-            </div>
-            <div class="card row">
-              <div class="row-label"><b>สีหลัก</b><span>สีของปุ่มและไฮไลต์</span></div>
-              <div class="swatches" id="swatches"></div>
-            </div>
-            <div class="card row">
-              <div class="row-label"><b>เต็มจอ</b><span>ซ่อนแถบเบราว์เซอร์ ถ้าเบราว์เซอร์อนุญาต</span></div>
-              <button class="pill" id="fullBtn"><svg><use href="#i-full"/></svg>เปิดเต็มจอ</button>
-            </div>
-            <div class="card row">
-              <div class="row-label"><b>รีเซ็ตทางลัด</b><span>กลับไปใช้ชุดแอปเริ่มต้น</span></div>
-              <button class="pill" id="resetApps">รีเซ็ต</button>
-            </div>
-            <div class="card row">
-              <div class="row-label"><b>ตำแหน่ง GPS</b><span id="gpsState">กำลังตรวจสอบ</span></div>
-            </div>
-            <p class="hint" style="padding:0 1.25rem">ทางลัด ไฟล์เพลง และการตั้งค่าเก็บไว้ในเบราว์เซอร์ของรถคันนี้เท่านั้น ไฟล์เพลงต้องเลือกใหม่ทุกครั้งที่เปิดหน้า</p>
-          </div>
-        </div>
+      <div class="page-head"><div><div class="eyebrow">Tesaro</div><h1 class="page-title">ตั้งค่า</h1></div></div>
+      <div class="settings">
+        <div class="panel srow"><div><b>นาฬิกา 24 ชั่วโมง</b><span>ปิดเพื่อแสดงแบบ 12 ชั่วโมง</span></div><button class="switch" role="switch" id="sw24" aria-label="นาฬิกา 24 ชั่วโมง"></button></div>
+        <div class="panel srow"><div><b>ตัวอักษรใหญ่</b><span>ขยายปุ่มและข้อความ</span></div><button class="switch" role="switch" id="swBig" aria-label="ตัวอักษรใหญ่"></button></div>
+        <div class="panel srow"><div><b>เสียงนำทาง</b><span>พูดบอกทางเป็นภาษาไทย ถ้าเบราว์เซอร์รองรับ</span></div><button class="switch" role="switch" id="swVoice" aria-label="เสียงนำทาง"></button></div>
+        <div class="panel srow"><div><b>ดาวเคลื่อนไหว</b><span>ปิดเพื่อประหยัดแรงเครื่อง</span></div><button class="switch" role="switch" id="swStars" aria-label="ดาวเคลื่อนไหว"></button></div>
+        <div class="panel srow"><div><b>เต็มจอ</b><span>ซ่อนแถบเบราว์เซอร์ ถ้าเบราว์เซอร์อนุญาต</span></div><button class="btn" id="fullBtn"><svg><use href="#i-full"/></svg>เปิดเต็มจอ</button></div>
+        <div class="panel srow"><div><b>รีเซ็ตทางลัด</b><span>กลับไปใช้ชุดแอปเริ่มต้น</span></div><button class="btn" id="resetApps">รีเซ็ต</button></div>
+        <div class="panel srow"><div><b>ตำแหน่ง GPS</b><span id="gpsState">กำลังตรวจสอบ</span></div></div>
+        <p class="hint" style="padding:0 .5rem">ทางลัดและการตั้งค่าเก็บไว้ในเบราว์เซอร์ของรถคันนี้ ไฟล์เพลงและวิดีโอต้องเลือกใหม่ทุกครั้งที่เปิดหน้า</p>
       </div>
     </section>
   </main>
 </div>
 
-<!-- One shared map element and its overlays, moved between Home and Navigation -->
-<div class="map" id="map"><div class="map-offline">แผนที่โหลดไม่ได้ ตรวจสอบอินเทอร์เน็ต</div></div>
-<div class="map-overlay map-search-pill" id="mapSearch"><button class="search-fake" data-go="nav"><svg class="i"><use href="#i-search"/></svg>ค้นหาจุดหมาย</button></div>
-<div class="map-overlay nav-banner" id="navBanner" hidden>
-  <svg class="turn" id="bIcon" viewBox="0 0 24 24"><use href="#i-arrow"/></svg>
-  <div class="bt"><b id="bDist"></b><span id="bText"></span><small id="bEta"></small></div>
-  <button class="fab" id="stopNav" aria-label="หยุดนำทาง"><svg class="i"><use href="#i-close"/></svg></button>
+<div class="mini" id="mini" hidden>
+  <span class="m-art" data-art data-go="music" role="button"><svg><use href="#i-music"/></svg></span>
+  <span class="m-text" data-go="music" role="button"><b data-bind="title"></b><span data-bind="sub"></span></span>
+  <span class="ctl" data-act="prev" role="button" aria-label="ก่อนหน้า"><svg><use href="#i-prev"/></svg></span>
+  <span class="ctl play" data-act="toggle" role="button" aria-label="เล่นหรือหยุด"><svg><use href="#i-play" data-bind="playicon"/></svg></span>
+  <span class="ctl" data-act="next" role="button" aria-label="ถัดไป"><svg><use href="#i-next"/></svg></span>
 </div>
-<div class="map-overlay speed-bubble" id="speedBubble"><div class="speed"><b id="speedVal">–</b><small>กม./ชม.</small></div></div>
-<div class="map-overlay map-btns" id="mapBtns">
-  <button class="fab" id="zoomIn" aria-label="ซูมเข้า"><svg class="i"><use href="#i-plusz"/></svg></button>
-  <button class="fab" id="zoomOut" aria-label="ซูมออก"><svg class="i"><use href="#i-minus"/></svg></button>
-  <button class="fab on" id="follow" aria-label="ตามตำแหน่งรถ"><svg class="i"><use href="#i-loc"/></svg></button>
+<button class="nav-chip" id="navChip" data-go="map" hidden><svg viewBox="0 0 24 24" id="chipIcon"><use href="#i-arrow"/></svg><span><b id="chipDist"></b><span id="chipText"></span></span></button>
+
+<div class="overlay" id="overlay" hidden>
+  <div class="ov-bar">
+    <button class="icon-btn" id="ovClose" aria-label="ปิด"><svg class="i"><use href="#i-back"/></svg></button>
+    <b id="ovTitle"></b>
+  </div>
+  <video id="ovVideo" controls playsinline></video>
+  <iframe id="ovFrame" hidden allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen></iframe>
 </div>
 
 <div class="toast" id="toast" role="status"></div>
-<audio id="audio" preload="metadata"></audio>
-
+<audio id="audio" preload="none"></audio>
 <script>
 (() => {
   const $ = (s, r = document) => r.querySelector(s);
@@ -1270,78 +1379,407 @@ svg.leaflet-image-layer.leaflet-interactive path {
     set(k, v) { try { localStorage.setItem('acw:' + k, JSON.stringify(v)); } catch (e) {} }
   };
   const toastEl = $('#toast'); let toastT;
-  const toast = msg => { toastEl.textContent = msg; toastEl.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => toastEl.classList.remove('show'), 2200); };
+  const toast = msg => { toastEl.textContent = msg; toastEl.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => toastEl.classList.remove('show'), 2400); };
+  const hashOf = s => [...s].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7);
+  const SPACE_GRADS = [
+    'linear-gradient(155deg,#5b48ff,#1a1150)', 'linear-gradient(155deg,#9b4dff,#250c4a)', 'linear-gradient(155deg,#3a6bff,#0c1a4d)',
+    'linear-gradient(155deg,#ff5fa8,#3a0d4d)', 'linear-gradient(155deg,#26c6da,#0c2350)', 'linear-gradient(155deg,#7d6bff,#2a0f5c)',
+    'linear-gradient(155deg,#ff8a5c,#3b0f3f)', 'linear-gradient(155deg,#4ade80,#0d2f3a)'
+  ];
+  const gradFor = s => SPACE_GRADS[hashOf(s) % SPACE_GRADS.length];
 
   /* ---------- Settings ---------- */
-  const ACCENTS = { blue: ['#8ab4f8', '#0b1a33'], teal: ['#6fd3c4', '#062621'], amber: ['#f2c26b', '#2b1c02'], rose: ['#f28b9b', '#33080f'] };
-  const settings = Object.assign({ h24: true, big: false, accent: 'blue', voice: true }, store.get('settings', {}));
+  const settings = Object.assign({ h24: true, big: false, voice: true, stars: true }, store.get('settings', {}));
   function applySettings() {
-    const [a, ink] = ACCENTS[settings.accent] || ACCENTS.blue;
-    document.documentElement.style.setProperty('--accent', a);
-    document.documentElement.style.setProperty('--accent-ink', ink);
     document.documentElement.classList.toggle('big', settings.big);
     $('#sw24').setAttribute('aria-checked', settings.h24);
     $('#swBig').setAttribute('aria-checked', settings.big);
     $('#swVoice').setAttribute('aria-checked', settings.voice);
-    $$('.swatch').forEach(s => s.setAttribute('aria-pressed', s.dataset.k === settings.accent));
+    $('#swStars').setAttribute('aria-checked', settings.stars);
     store.set('settings', settings);
     tick();
-    if (map) setTimeout(() => map.invalidateSize(), 50);
   }
-  $('#swatches').innerHTML = Object.entries(ACCENTS).map(([k, [c]]) =>
-    `<button class="swatch" data-k="${k}" style="background:${c}" aria-label="สี ${k}"></button>`).join('');
-  $('#swatches').addEventListener('click', e => { const b = e.target.closest('.swatch'); if (b) { settings.accent = b.dataset.k; applySettings(); } });
   $('#sw24').onclick = () => { settings.h24 = !settings.h24; applySettings(); };
   $('#swBig').onclick = () => { settings.big = !settings.big; applySettings(); };
   $('#swVoice').onclick = () => { settings.voice = !settings.voice; applySettings(); if (settings.voice) speak('เปิดเสียงนำทางแล้ว'); };
+  $('#swStars').onclick = () => { settings.stars = !settings.stars; applySettings(); };
   $('#fullBtn').onclick = () => {
-    const el = document.documentElement;
     if (document.fullscreenElement) { document.exitFullscreen(); return; }
-    const p = el.requestFullscreen ? el.requestFullscreen() : null;
-    if (!p) toast('เบราว์เซอร์นี้ไม่รองรับโหมดเต็มจอ');
-    else p.catch(() => toast('เบราว์เซอร์นี้ไม่อนุญาตโหมดเต็มจอ'));
+    const p = document.documentElement.requestFullscreen ? document.documentElement.requestFullscreen() : null;
+    if (!p) toast('เบราว์เซอร์นี้ไม่รองรับโหมดเต็มจอ'); else p.catch(() => toast('เบราว์เซอร์นี้ไม่อนุญาตโหมดเต็มจอ'));
   };
 
   /* ---------- Clock ---------- */
   function tick() {
     const d = new Date();
-    const t = d.toLocaleTimeString(settings.h24 ? 'en-GB' : 'en-US', { hour: settings.h24 ? '2-digit' : 'numeric', minute: '2-digit', hour12: !settings.h24 });
-    $('#railTime').textContent = t.replace(/\s?[AP]M/, '');
-    $('#bigTime').textContent = t;
-    $('#dateLine').textContent = d.toLocaleDateString('th-TH', { weekday: 'long', day: 'numeric', month: 'long' });
+    $('#clock').textContent = d.toLocaleTimeString(settings.h24 ? 'en-GB' : 'en-US', { hour: settings.h24 ? '2-digit' : 'numeric', minute: '2-digit', hour12: !settings.h24 });
   }
   setInterval(tick, 1000);
+
+  /* ---------- Starfield ---------- */
+  const cv = $('#stars'), cx = cv.getContext('2d');
+  let stars = [];
+  function sizeStars() {
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    cv.width = innerWidth * dpr; cv.height = innerHeight * dpr;
+    cx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const n = Math.round(innerWidth * innerHeight / 5200);
+    stars = Array.from({ length: n }, () => ({
+      x: Math.random() * innerWidth, y: Math.random() * innerHeight, r: Math.random() ** 3 * 1.6 + .25,
+      a: Math.random() * .7 + .2, p: Math.random() * Math.PI * 2, s: Math.random() * .8 + .2,
+      c: Math.random() < .25 ? '196,184,255' : '255,255,255'
+    }));
+    drawStars(0);
+  }
+  function drawStars(t) {
+    cx.clearRect(0, 0, innerWidth, innerHeight);
+    for (const s of stars) {
+      const tw = settings.stars ? .55 + .45 * Math.sin(t / 900 * s.s + s.p) : 1;
+      cx.fillStyle = `rgba(${s.c},${(s.a * tw).toFixed(3)})`;
+      cx.beginPath(); cx.arc(s.x, s.y, s.r, 0, 6.283); cx.fill();
+    }
+  }
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let lastFrame = 0;
+  function starLoop(t) {
+    if (settings.stars && !reduceMotion && !document.hidden && $('#overlay').hidden && t - lastFrame > 66) { lastFrame = t; drawStars(t); }
+    requestAnimationFrame(starLoop);
+  }
+  addEventListener('resize', sizeStars);
+  sizeStars(); requestAnimationFrame(starLoop);
 
   /* ---------- Views ---------- */
   let current = 'home';
   function go(view) {
     current = view;
     $$('.view').forEach(v => v.hidden = v.dataset.view !== view);
-    $$('.rail .navbtn').forEach(b => b.dataset.go === view ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current'));
-    placeMap();
-    if (view === 'nav') setTimeout(() => $('#dest').focus(), 60);
+    $$('[data-go]').forEach(b => { if (b.closest('.tabs, .status')) b.dataset.go === view ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current'); });
+    if (view === 'map') { if (!map) initMap(); placeMap(); }
+    syncChip();
     store.set('view', view === 'settings' ? 'home' : view);
   }
-  document.addEventListener('click', e => { const b = e.target.closest('[data-go]'); if (b) go(b.dataset.go); });
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-go]');
+    if (b && !e.target.closest('[data-act]')) go(b.dataset.go);
+  });
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  /* ---------- Catalogue ---------- */
+  // Free films hosted in Google's public sample bucket (Blender open movies and car reviews).
+  const SAMPLE = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/';
+  const FILMS = [
+    { f: 'Sintel', t: 'Sintel', y: 2010, m: 15, g: 'แฟนตาซี', d: 'หญิงสาวออกเดินทางตามหามังกรน้อยที่เธอเคยช่วยชีวิตไว้ การเดินทางที่ทั้งงดงามและเจ็บปวด' },
+    { f: 'TearsOfSteel', t: 'Tears of Steel', y: 2012, m: 12, g: 'ไซไฟ', d: 'นักวิทยาศาสตร์กลุ่มหนึ่งย้อนความทรงจำครั้งสุดท้าย เพื่อกอบกู้อัมสเตอร์ดัมจากกองทัพหุ่นยนต์' },
+    { f: 'BigBuckBunny', t: 'Big Buck Bunny', y: 2008, m: 10, g: 'ตลก', d: 'กระต่ายยักษ์ใจดีเอาคืนสามสหายจอมแกล้งแห่งป่า แบบที่ทั้งน่ารักและฮา' },
+    { f: 'ElephantsDream', t: 'Elephants Dream', y: 2006, m: 11, g: 'ไซไฟ', d: 'สองชายหลงอยู่ในเครื่องจักรปริศนาที่ไม่มีที่สิ้นสุด และความจริงที่แต่ละคนเห็นไม่เหมือนกัน' },
+    { f: 'WeAreGoingOnBullrun', t: 'We Are Going On Bullrun', y: 2013, m: 1, g: 'สารคดีรถ', d: 'ทริปขับรถข้ามประเทศกับรถสุดแรง' },
+    { f: 'VolkswagenGTIReview', t: 'Volkswagen GTI Review', y: 2013, m: 1, g: 'รีวิวรถ', d: 'รีวิวรถแฮทช์แบ็กสมรรถนะสูง' },
+    { f: 'SubaruOutbackOnStreetAndDirt', t: 'Subaru Outback On Street And Dirt', y: 2013, m: 1, g: 'รีวิวรถ', d: 'ลองขับทั้งถนนเรียบและทางฝุ่น' },
+    { f: 'WhatCarCanYouGetForAGrand', t: 'What Car Can You Get For A Grand?', y: 2013, m: 1, g: 'สารคดีรถ', d: 'งบพันดอลลาร์ ซื้อรถอะไรได้บ้าง' }
+  ].map(x => ({ ...x, url: SAMPLE + x.f + '.mp4', img: SAMPLE + 'images/' + x.f + '.jpg' }));
+
+  const MOVIE_SERVICES = [
+    { n: 'Netflix', u: 'https://www.netflix.com' }, { n: 'Prime Video', u: 'https://www.primevideo.com' },
+    { n: 'Disney+ Hotstar', u: 'https://www.hotstar.com/th' }, { n: 'YouTube', u: 'https://www.youtube.com' },
+    { n: 'SmartTube', tube: true }, { n: 'Apple TV+', u: 'https://tv.apple.com' },
+    { n: 'Viu', u: 'https://www.viu.com' }, { n: 'iQIYI', u: 'https://www.iq.com' },
+    { n: 'WeTV', u: 'https://wetv.vip' }, { n: 'TrueID', u: 'https://www.trueid.net' },
+    { n: 'MONOMAX', u: 'https://www.monomax.me' }, { n: 'Twitch', u: 'https://www.twitch.tv' }
+  ];
+  const MUSIC_SERVICES = [
+    { n: 'Spotify', u: 'https://open.spotify.com' }, { n: 'YouTube Music', u: 'https://music.youtube.com' },
+    { n: 'Apple Music', u: 'https://music.apple.com' }, { n: 'JOOX', u: 'https://www.joox.com/th' },
+    { n: 'SoundCloud', u: 'https://soundcloud.com' }, { n: 'TIDAL', u: 'https://listen.tidal.com' }
+  ];
+  const RADIO = [
+    ['deepspaceone', 'Deep Space One', 'แอมเบียนต์อวกาศ'], ['spacestation', 'Space Station Soma', 'อิเล็กทรอนิกส์ลอยฟ้า'],
+    ['groovesalad', 'Groove Salad', 'ชิลล์ดาวน์'], ['lush', 'Lush', 'เสียงร้องหวาน ฟังสบาย'],
+    ['indiepop', 'Indie Pop Rocks!', 'อินดี้ป็อป'], ['secretagent', 'Secret Agent', 'แจ๊สสายลับ'],
+    ['beatblender', 'Beat Blender', 'ดีพเฮาส์'], ['dronezone', 'Drone Zone', 'แอมเบียนต์ลึก']
+  ].map(([id, n, d]) => ({ id, name: n, sub: d, url: `https://ice1.somafm.com/${id}-128-mp3`, live: true }));
+
+  const GAMES = [
+    { n: 'PlayStation 2', sub: 'Play! · รุ่นทดลอง', tag: 'PS2', glyph: 'playstation2', g: 'linear-gradient(165deg,#3d4fff 0%,#14165a 60%,#07061c 100%)', url: 'https://playjs.purei.org/' },
+    { n: 'PlayStation Portable', sub: 'PPSSPP', tag: 'PSP', glyph: 'playstationportable', g: 'linear-gradient(165deg,#7a5cff 0%,#241264 60%,#07061c 100%)', sys: 'psp' },
+    { n: 'PlayStation', sub: 'PCSX ReARMed', tag: 'PS1', glyph: 'playstation', g: 'linear-gradient(165deg,#a35bff 0%,#2c0f5e 60%,#07061c 100%)', sys: 'psx' },
+    { n: 'Nintendo 64', sub: 'Mupen64Plus', tag: 'N64', glyph: 'nintendo', g: 'linear-gradient(165deg,#ff5f7e 0%,#3d0f4a 60%,#07061c 100%)', sys: 'n64' },
+    { n: 'Nintendo DS', sub: 'melonDS', tag: 'NDS', glyph: 'nintendods', g: 'linear-gradient(165deg,#5fb4ff 0%,#10265e 60%,#07061c 100%)', sys: 'nds' },
+    { n: 'Game Boy Advance', sub: 'mGBA', tag: 'GBA', glyph: 'nintendo', g: 'linear-gradient(165deg,#6f6bff 0%,#1b1a66 60%,#07061c 100%)', sys: 'gba' },
+    { n: 'Super Nintendo', sub: 'Snes9x', tag: 'SNES', glyph: 'nintendo', g: 'linear-gradient(165deg,#c06bff 0%,#3a1466 60%,#07061c 100%)', sys: 'snes' },
+    { n: 'Nintendo NES', sub: 'FCEUmm', tag: 'NES', glyph: 'nintendo', g: 'linear-gradient(165deg,#ff7a5c 0%,#4a1530 60%,#07061c 100%)', sys: 'nes' },
+    { n: 'Sega Mega Drive', sub: 'Genesis Plus GX', tag: 'MD', glyph: 'sega', g: 'linear-gradient(165deg,#3fa7ff 0%,#0f2a66 60%,#07061c 100%)', sys: 'segaMD' },
+    { n: 'Game Boy / Color', sub: 'Gambatte', tag: 'GB', glyph: 'nintendo', g: 'linear-gradient(165deg,#5be0b0 0%,#0d3a4a 60%,#07061c 100%)', sys: 'gb' }
+  ];
+
+  /* ---------- Brand marks ---------- */
+  const BRANDS = {"youtube":{"m":"youtube.com","c":"#FF0000","p":"M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"},"youtubemusic":{"m":"music.youtube.com","c":"#FF0000","p":"M12 0C5.376 0 0 5.376 0 12s5.376 12 12 12 12-5.376 12-12S18.624 0 12 0zm0 19.104c-3.924 0-7.104-3.18-7.104-7.104S8.076 4.896 12 4.896s7.104 3.18 7.104 7.104-3.18 7.104-7.104 7.104zm0-13.332c-3.432 0-6.228 2.796-6.228 6.228S8.568 18.228 12 18.228s6.228-2.796 6.228-6.228S15.432 5.772 12 5.772zM9.684 15.54V8.46L15.816 12l-6.132 3.54z"},"spotify":{"m":"spotify.com","c":"#1ED760","p":"M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"},"applemusic":{"m":"music.apple.com","c":"#FA243C","p":"M23.994 6.124a9.23 9.23 0 00-.24-2.19c-.317-1.31-1.062-2.31-2.18-3.043a5.022 5.022 0 00-1.877-.726 10.496 10.496 0 00-1.564-.15c-.04-.003-.083-.01-.124-.013H5.986c-.152.01-.303.017-.455.026-.747.043-1.49.123-2.193.4-1.336.53-2.3 1.452-2.865 2.78-.192.448-.292.925-.363 1.408-.056.392-.088.785-.1 1.18 0 .032-.007.062-.01.093v12.223c.01.14.017.283.027.424.05.815.154 1.624.497 2.373.65 1.42 1.738 2.353 3.234 2.801.42.127.856.187 1.293.228.555.053 1.11.06 1.667.06h11.03a12.5 12.5 0 001.57-.1c.822-.106 1.596-.35 2.295-.81a5.046 5.046 0 001.88-2.207c.186-.42.293-.87.37-1.324.113-.675.138-1.358.137-2.04-.002-3.8 0-7.595-.003-11.393zm-6.423 3.99v5.712c0 .417-.058.827-.244 1.206-.29.59-.76.962-1.388 1.14-.35.1-.706.157-1.07.173-.95.045-1.773-.6-1.943-1.536a1.88 1.88 0 011.038-2.022c.323-.16.67-.25 1.018-.324.378-.082.758-.153 1.134-.24.274-.063.457-.23.51-.516a.904.904 0 00.02-.193c0-1.815 0-3.63-.002-5.443a.725.725 0 00-.026-.185c-.04-.15-.15-.243-.304-.234-.16.01-.318.035-.475.066-.76.15-1.52.303-2.28.456l-2.325.47-1.374.278c-.016.003-.032.01-.048.013-.277.077-.377.203-.39.49-.002.042 0 .086 0 .13-.002 2.602 0 5.204-.003 7.805 0 .42-.047.836-.215 1.227-.278.64-.77 1.04-1.434 1.233-.35.1-.71.16-1.075.172-.96.036-1.755-.6-1.92-1.544-.14-.812.23-1.685 1.154-2.075.357-.15.73-.232 1.108-.31.287-.06.575-.116.86-.177.383-.083.583-.323.6-.714v-.15c0-2.96 0-5.922.002-8.882 0-.123.013-.25.042-.37.07-.285.273-.448.546-.518.255-.066.515-.112.774-.165.733-.15 1.466-.296 2.2-.444l2.27-.46c.67-.134 1.34-.27 2.01-.403.22-.043.442-.088.663-.106.31-.025.523.17.554.482.008.073.012.148.012.223.002 1.91.002 3.822 0 5.732z"},"soundcloud":{"m":"soundcloud.com","c":"#FF5500","p":"M23.999 14.165c-.052 1.796-1.612 3.169-3.4 3.169h-8.18a.68.68 0 0 1-.675-.683V7.862a.747.747 0 0 1 .452-.724s.75-.513 2.333-.513a5.364 5.364 0 0 1 2.763.755 5.433 5.433 0 0 1 2.57 3.54c.282-.08.574-.121.868-.12.884 0 1.73.358 2.347.992s.948 1.49.922 2.373ZM10.721 8.421c.247 2.98.427 5.697 0 8.672a.264.264 0 0 1-.53 0c-.395-2.946-.22-5.718 0-8.672a.264.264 0 0 1 .53 0ZM9.072 9.448c.285 2.659.37 4.986-.006 7.655a.277.277 0 0 1-.55 0c-.331-2.63-.256-5.02 0-7.655a.277.277 0 0 1 .556 0Zm-1.663-.257c.27 2.726.39 5.171 0 7.904a.266.266 0 0 1-.532 0c-.38-2.69-.257-5.21 0-7.904a.266.266 0 0 1 .532 0Zm-1.647.77a26.108 26.108 0 0 1-.008 7.147.272.272 0 0 1-.542 0 27.955 27.955 0 0 1 0-7.147.275.275 0 0 1 .55 0Zm-1.67 1.769c.421 1.865.228 3.5-.029 5.388a.257.257 0 0 1-.514 0c-.21-1.858-.398-3.549 0-5.389a.272.272 0 0 1 .543 0Zm-1.655-.273c.388 1.897.26 3.508-.01 5.412-.026.28-.514.283-.54 0-.244-1.878-.347-3.54-.01-5.412a.283.283 0 0 1 .56 0Zm-1.668.911c.4 1.268.257 2.292-.026 3.572a.257.257 0 0 1-.514 0c-.241-1.262-.354-2.312-.023-3.572a.283.283 0 0 1 .563 0Z"},"tidal":{"m":"tidal.com","c":"#000000","p":"M12.012 3.992L8.008 7.996 4.004 3.992 0 7.996 4.004 12l4.004-4.004L12.012 12l-4.004 4.004 4.004 4.004 4.004-4.004L12.012 12l4.004-4.004-4.004-4.004zM16.042 7.996l3.979-3.979L24 7.996l-3.979 3.979z"},"googlemaps":{"m":"google.com/maps","c":"#4285F4","p":"M19.527 4.799c1.212 2.608.937 5.678-.405 8.173-1.101 2.047-2.744 3.74-4.098 5.614-.619.858-1.244 1.75-1.669 2.727-.141.325-.263.658-.383.992-.121.333-.224.673-.34 1.008-.109.314-.236.684-.627.687h-.007c-.466-.001-.579-.53-.695-.887-.284-.874-.581-1.713-1.019-2.525-.51-.944-1.145-1.817-1.79-2.671L19.527 4.799zM8.545 7.705l-3.959 4.707c.724 1.54 1.821 2.863 2.871 4.18.247.31.494.622.737.936l4.984-5.925-.029.01c-1.741.601-3.691-.291-4.392-1.987a3.377 3.377 0 0 1-.209-.716c-.063-.437-.077-.761-.004-1.198l.001-.007zM5.492 3.149l-.003.004c-1.947 2.466-2.281 5.88-1.117 8.77l4.785-5.689-.058-.05-3.607-3.035zM14.661.436l-3.838 4.563a.295.295 0 0 1 .027-.01c1.6-.551 3.403.15 4.22 1.626.176.319.323.683.377 1.045.068.446.085.773.012 1.22l-.003.016 3.836-4.561A8.382 8.382 0 0 0 14.67.439l-.009-.003zM9.466 5.868L14.162.285l-.047-.012A8.31 8.31 0 0 0 11.986 0a8.439 8.439 0 0 0-6.169 2.766l-.016.018 3.665 3.084z"},"waze":{"m":"waze.com","c":"#33CCFF","p":"M13.218 0C9.915 0 6.835 1.49 4.723 4.148c-1.515 1.913-2.31 4.272-2.31 6.706v1.739c0 .894-.62 1.738-1.862 1.813-.298.025-.547.224-.547.522-.05.82.82 2.31 2.012 3.502.82.844 1.788 1.515 2.832 2.036a3 3 0 0 0 2.955 3.528 2.966 2.966 0 0 0 2.931-2.385h2.509c.323 1.689 2.086 2.856 3.974 2.21 1.64-.546 2.36-2.409 1.763-3.924a12.84 12.84 0 0 0 1.838-1.465 10.73 10.73 0 0 0 3.18-7.65c0-2.882-1.118-5.589-3.155-7.625A10.899 10.899 0 0 0 13.218 0zm0 1.217c2.558 0 4.967.994 6.78 2.807a9.525 9.525 0 0 1 2.807 6.78A9.526 9.526 0 0 1 20 17.585a9.647 9.647 0 0 1-6.78 2.807h-2.46a3.008 3.008 0 0 0-2.93-2.41 3.03 3.03 0 0 0-2.534 1.367v.024a8.945 8.945 0 0 1-2.41-1.788c-.844-.844-1.316-1.614-1.515-2.11a2.858 2.858 0 0 0 1.441-.846 2.959 2.959 0 0 0 .795-2.036v-1.789c0-2.11.696-4.197 2.012-5.861 1.863-2.385 4.62-3.726 7.6-3.726zm-2.41 5.986a1.192 1.192 0 0 0-1.191 1.192 1.192 1.192 0 0 0 1.192 1.193A1.192 1.192 0 0 0 12 8.395a1.192 1.192 0 0 0-1.192-1.192zm7.204 0a1.192 1.192 0 0 0-1.192 1.192 1.192 1.192 0 0 0 1.192 1.193 1.192 1.192 0 0 0 1.192-1.193 1.192 1.192 0 0 0-1.192-1.192zm-7.377 4.769a.596.596 0 0 0-.546.845 4.813 4.813 0 0 0 4.346 2.757 4.77 4.77 0 0 0 4.347-2.757.596.596 0 0 0-.547-.845h-.025a.561.561 0 0 0-.521.348 3.59 3.59 0 0 1-3.254 2.061 3.591 3.591 0 0 1-3.254-2.061.64.64 0 0 0-.546-.348z"},"netflix":{"m":"netflix.com","c":"#E50914","p":"M5.398 0v.006c3.028 8.556 5.37 15.175 8.348 23.596 2.344.058 4.85.398 4.854.398-2.8-7.924-5.923-16.747-8.487-24zm8.489 0v9.63L18.6 22.951c-.043-7.86-.004-15.913.002-22.95zM5.398 1.05V24c1.873-.225 2.81-.312 4.715-.398v-9.22z"},"primevideo":{"m":"primevideo.com","c":"#1F2E3E","p":"M0 9.508c0-.043.01-.073.028-.09.018-.017.047-.025.086-.025h.329c.07 0 .112.034.127.101l.032.119c.091-.088.202-.159.33-.21a1.04 1.04 0 0 1 .396-.079c.294 0 .528.109.7.326.171.217.257.51.257.88 0 .254-.042.475-.127.665-.086.19-.201.335-.347.437a.85.85 0 0 1-.502.154c-.125 0-.243-.02-.355-.06a.857.857 0 0 1-.288-.164v1.003c0 .043-.008.073-.025.09-.017.016-.046.025-.09.025H.115c-.04 0-.068-.009-.086-.025-.019-.017-.028-.047-.028-.09zm1.113.32a.868.868 0 0 0-.447.124v1.206a.834.834 0 0 0 .447.124c.17 0 .296-.058.376-.174.081-.117.121-.3.121-.55 0-.254-.04-.439-.118-.555-.08-.116-.206-.174-.379-.174zm2.248-.087c.121-.134.236-.23.344-.286a.733.733 0 0 1 .345-.085h.063c.043 0 .073.009.092.025.018.017.027.047.027.09v.385c0 .04-.008.068-.025.087-.017.018-.046.027-.089.027a.923.923 0 0 1-.082-.004 1.369 1.369 0 0 0-.383.025c-.1.02-.186.045-.256.076v1.54c0 .04-.008.069-.025.087-.016.018-.046.028-.089.028h-.437c-.04 0-.069-.01-.087-.028-.018-.018-.028-.047-.028-.087V9.508c0-.043.01-.073.028-.09.018-.017.047-.025.087-.025h.328c.07 0 .112.034.128.1zm1.526-.71a.396.396 0 0 1-.278-.096.338.338 0 0 1-.105-.262c0-.11.035-.197.105-.26a.395.395 0 0 1 .278-.097c.116 0 .208.032.278.096.07.064.105.151.105.261a.34.34 0 0 1-.105.262.396.396 0 0 1-.278.096zm-.333.477c0-.043.01-.073.027-.09.019-.017.048-.025.087-.025h.438c.043 0 .072.008.089.025s.025.047.025.09v2.113c0 .04-.008.069-.025.087-.017.018-.046.028-.09.028h-.437c-.04 0-.068-.01-.087-.028-.018-.018-.027-.047-.027-.087zm1.837.11c.161-.107.306-.183.435-.227.13-.045.263-.067.4-.067.273 0 .466.098.579.294.155-.104.3-.18.438-.225.137-.046.278-.069.424-.069.213 0 .377.06.495.179.117.12.175.286.175.5v1.618c0 .04-.008.069-.025.087-.017.019-.046.027-.089.027h-.438c-.04 0-.068-.008-.086-.027-.018-.018-.028-.047-.028-.087V10.15c0-.208-.092-.312-.278-.312-.164 0-.33.04-.497.119v1.664c0 .04-.008.069-.025.087-.017.019-.046.027-.09.027h-.437c-.04 0-.068-.008-.086-.027-.019-.018-.028-.047-.028-.087V10.15c0-.208-.093-.312-.278-.312-.17 0-.337.04-.502.123v1.66c0 .04-.008.069-.025.087-.017.019-.046.027-.089.027h-.438c-.039 0-.068-.008-.086-.027-.018-.018-.027-.047-.027-.087V9.508c0-.043.009-.073.027-.09.018-.017.047-.025.086-.025h.329c.07 0 .112.034.128.101zm4.387 1.16a1.81 1.81 0 0 1-.451-.05c.018.204.08.35.185.44.105.088.263.132.476.132.085 0 .168-.005.249-.016a3.08 3.08 0 0 0 .362-.078.143.143 0 0 1 .023-.002c.052 0 .078.035.078.105v.211c0 .049-.007.083-.02.103a.169.169 0 0 1-.08.053 1.953 1.953 0 0 1-.708.128c-.377 0-.666-.103-.868-.312-.203-.207-.304-.505-.304-.893 0-.398.104-.71.31-.935.207-.227.494-.34.862-.34.283 0 .504.069.664.206a.69.69 0 0 1 .24.55c0 .23-.087.403-.258.52-.172.119-.425.177-.76.177zm.064-.99c-.292 0-.46.18-.506.54.122.025.257.037.406.037.155 0 .267-.024.337-.071.07-.047.105-.12.105-.218 0-.193-.114-.289-.342-.289zm2.948 1.946a.21.21 0 0 1-.075-.011.119.119 0 0 1-.05-.037.274.274 0 0 1-.038-.071l-.777-2.04a1.863 1.863 0 0 1-.023-.063.162.162 0 0 1-.009-.05c0-.047.03-.07.091-.07h.454c.049 0 .084.01.107.028.023.018.04.049.052.092l.468 1.622.477-1.622a.175.175 0 0 1 .052-.092c.023-.018.058-.027.107-.027h.44c.061 0 .091.022.091.068a.16.16 0 0 1-.009.05l-.022.065-.777 2.039a.274.274 0 0 1-.039.07.122.122 0 0 1-.047.038.207.207 0 0 1-.078.01zm2.02-2.703a.393.393 0 0 1-.277-.097.338.338 0 0 1-.105-.26c0-.11.035-.198.105-.262a.393.393 0 0 1 .277-.096c.115 0 .207.032.277.096.07.064.104.151.104.261 0 .11-.034.197-.104.261a.393.393 0 0 1-.277.097zm-.218 2.703c-.04 0-.068-.01-.086-.028-.019-.018-.028-.047-.028-.087V9.507c0-.043.01-.072.028-.09.018-.016.047-.024.086-.024h.436c.042 0 .072.008.089.025.016.017.024.046.024.09v2.111c0 .04-.008.07-.024.087-.017.019-.047.028-.09.028zm1.948.05a.869.869 0 0 1-.513-.153.97.97 0 0 1-.334-.426 1.6 1.6 0 0 1-.116-.63c0-.38.09-.682.268-.91a.856.856 0 0 1 .709-.341.98.98 0 0 1 .622.206V8.458c0-.043.01-.073.027-.09.018-.016.047-.025.087-.025h.436c.042 0 .071.009.088.025.017.017.025.047.025.09v3.161c0 .04-.008.07-.025.087-.017.019-.046.028-.088.028h-.364a.135.135 0 0 1-.084-.023.137.137 0 0 1-.043-.078l-.027-.105a.958.958 0 0 1-.668.256zm.218-.504a.762.762 0 0 0 .418-.128v-1.21a.872.872 0 0 0-.45-.114c-.16 0-.28.06-.358.18-.08.121-.118.304-.118.548 0 .245.041.426.124.546.084.119.212.178.384.178zm2.588-.51c-.169 0-.315-.016-.44-.05.018.201.078.345.18.432.103.087.257.13.465.13.083 0 .164-.005.242-.016a2.997 2.997 0 0 0 .354-.076.135.135 0 0 1 .022-.002c.05 0 .075.035.075.103v.207c0 .048-.007.082-.02.101a.165.165 0 0 1-.077.052 1.895 1.895 0 0 1-.69.126c-.367 0-.65-.102-.846-.306-.197-.204-.296-.496-.296-.876 0-.39.1-.695.302-.917.202-.222.482-.333.84-.333.276 0 .492.068.647.203a.678.678 0 0 1 .234.539c0 .225-.084.395-.251.51-.168.115-.415.173-.74.173zm.063-.97c-.285 0-.45.176-.494.53.119.024.25.036.396.036.15 0 .26-.024.329-.07.068-.046.102-.117.102-.213 0-.19-.111-.284-.333-.284zm2.442 2.003c-.36 0-.642-.11-.845-.328-.203-.218-.304-.523-.304-.914 0-.388.101-.691.304-.91.203-.218.485-.327.845-.327s.642.109.845.327c.203.219.304.522.304.91 0 .39-.101.696-.304.914-.203.218-.485.328-.845.328zm0-.514c.318 0 .477-.242.477-.728 0-.483-.16-.724-.477-.724-.318 0-.477.241-.477.724 0 .486.16.728.477.728zm-6.844 1.886c.405-.306.944-.408 1.39-.408.418 0 .756.09.828.185.15.2-.039 1.584-.775 2.244-.112.102-.22.047-.17-.087.166-.442.536-1.436.36-1.677-.175-.242-1.158-.115-1.6-.058-.068.008-.107-.02-.112-.061v-.023c.004-.036.03-.078.079-.115zm-10.184-.172a.105.105 0 0 1 .106-.091c.027 0 .057.009.089.028a11.778 11.778 0 0 0 6.194 1.772c1.52 0 3.19-.34 4.726-1.043.232-.105.426.164.2.346-1.371 1.09-3.359 1.67-5.07 1.67-2.397 0-4.557-.956-6.191-2.547a.173.173 0 0 1-.054-.097Z"},"appletv":{"m":"tv.apple.com","c":"#000000","p":"M20.57 17.735h-1.815l-3.34-9.203h1.633l2.02 5.987c.075.231.273.9.586 2.012l.297-.997.33-1.006 2.094-6.004H24zm-5.344-.066a5.76 5.76 0 0 1-1.55.207c-1.23 0-1.84-.693-1.84-2.087V9.646h-1.063V8.532h1.121V7.081l1.476-.602v2.062h1.707v1.113H13.38v5.805c0 .446.074.75.214.932.14.182.396.264.75.264.207 0 .495-.041.883-.115zm-7.29-5.343c.017 1.764 1.55 2.358 1.567 2.366-.017.042-.248.842-.808 1.658-.487.71-.99 1.418-1.79 1.435-.783.016-1.03-.462-1.93-.462-.89 0-1.17.445-1.913.478-.758.025-1.344-.775-1.838-1.484-.998-1.451-1.765-4.098-.734-5.88.51-.89 1.426-1.451 2.416-1.46.75-.016 1.468.512 1.93.512.461 0 1.327-.627 2.234-.536.38.016 1.452.157 2.136 1.154-.058.033-1.278.743-1.27 2.219M6.468 7.988c.404-.495.685-1.18.61-1.864-.585.025-1.294.388-1.723.883-.38.437-.71 1.138-.619 1.806.652.05 1.328-.338 1.732-.825Z"},"twitch":{"m":"twitch.tv","c":"#9146FF","p":"M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"},"tiktok":{"m":"tiktok.com","c":"#000000","p":"M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"},"facebook":{"m":"facebook.com","c":"#0866FF","p":"M9.101 23.691v-7.98H6.627v-3.667h2.474v-1.58c0-4.085 1.848-5.978 5.858-5.978.401 0 .955.042 1.468.103a8.68 8.68 0 0 1 1.141.195v3.325a8.623 8.623 0 0 0-.653-.036 26.805 26.805 0 0 0-.733-.009c-.707 0-1.259.096-1.675.309a1.686 1.686 0 0 0-.679.622c-.258.42-.374.995-.374 1.752v1.297h3.919l-.386 2.103-.287 1.564h-3.246v8.245C19.396 23.238 24 18.179 24 12.044c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.628 3.874 10.35 9.101 11.647Z"},"instagram":{"m":"instagram.com","c":"#FF0069","p":"M7.0301.084c-1.2768.0602-2.1487.264-2.911.5634-.7888.3075-1.4575.72-2.1228 1.3877-.6652.6677-1.075 1.3368-1.3802 2.127-.2954.7638-.4956 1.6365-.552 2.914-.0564 1.2775-.0689 1.6882-.0626 4.947.0062 3.2586.0206 3.6671.0825 4.9473.061 1.2765.264 2.1482.5635 2.9107.308.7889.72 1.4573 1.388 2.1228.6679.6655 1.3365 1.0743 2.1285 1.38.7632.295 1.6361.4961 2.9134.552 1.2773.056 1.6884.069 4.9462.0627 3.2578-.0062 3.668-.0207 4.9478-.0814 1.28-.0607 2.147-.2652 2.9098-.5633.7889-.3086 1.4578-.72 2.1228-1.3881.665-.6682 1.0745-1.3378 1.3795-2.1284.2957-.7632.4966-1.636.552-2.9124.056-1.2809.0692-1.6898.063-4.948-.0063-3.2583-.021-3.6668-.0817-4.9465-.0607-1.2797-.264-2.1487-.5633-2.9117-.3084-.7889-.72-1.4568-1.3876-2.1228C21.2982 1.33 20.628.9208 19.8378.6165 19.074.321 18.2017.1197 16.9244.0645 15.6471.0093 15.236-.005 11.977.0014 8.718.0076 8.31.0215 7.0301.0839m.1402 21.6932c-1.17-.0509-1.8053-.2453-2.2287-.408-.5606-.216-.96-.4771-1.3819-.895-.422-.4178-.6811-.8186-.9-1.378-.1644-.4234-.3624-1.058-.4171-2.228-.0595-1.2645-.072-1.6442-.079-4.848-.007-3.2037.0053-3.583.0607-4.848.05-1.169.2456-1.805.408-2.2282.216-.5613.4762-.96.895-1.3816.4188-.4217.8184-.6814 1.3783-.9003.423-.1651 1.0575-.3614 2.227-.4171 1.2655-.06 1.6447-.072 4.848-.079 3.2033-.007 3.5835.005 4.8495.0608 1.169.0508 1.8053.2445 2.228.408.5608.216.96.4754 1.3816.895.4217.4194.6816.8176.9005 1.3787.1653.4217.3617 1.056.4169 2.2263.0602 1.2655.0739 1.645.0796 4.848.0058 3.203-.0055 3.5834-.061 4.848-.051 1.17-.245 1.8055-.408 2.2294-.216.5604-.4763.96-.8954 1.3814-.419.4215-.8181.6811-1.3783.9-.4224.1649-1.0577.3617-2.2262.4174-1.2656.0595-1.6448.072-4.8493.079-3.2045.007-3.5825-.006-4.848-.0608M16.953 5.5864A1.44 1.44 0 1 0 18.39 4.144a1.44 1.44 0 0 0-1.437 1.4424M5.8385 12.012c.0067 3.4032 2.7706 6.1557 6.173 6.1493 3.4026-.0065 6.157-2.7701 6.1506-6.1733-.0065-3.4032-2.771-6.1565-6.174-6.1498-3.403.0067-6.156 2.771-6.1496 6.1738M8 12.0077a4 4 0 1 1 4.008 3.9921A3.9996 3.9996 0 0 1 8 12.0077"},"x":{"m":"x.com","c":"#000000","p":"M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"},"line":{"m":"line.me","c":"#00C300","p":"M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"},"google":{"m":"google.com","c":"#4285F4","p":"M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"},"tesla":{"m":"tesla.com","c":"#CC0000","p":"M12 5.362l2.475-3.026s4.245.09 8.471 2.054c-1.082 1.636-3.231 2.438-3.231 2.438-.146-1.439-1.154-1.79-4.354-1.79L12 24 8.619 5.034c-3.18 0-4.188.354-4.335 1.792 0 0-2.146-.795-3.229-2.43C5.28 2.431 9.525 2.34 9.525 2.34L12 5.362l-.004.002H12v-.002zm0-3.899c3.415-.03 7.326.528 11.328 2.28.535-.968.672-1.395.672-1.395C19.625.612 15.528.015 12 0 8.472.015 4.375.61 0 2.349c0 0 .195.525.672 1.396C4.674 1.989 8.585 1.435 12 1.46v.003z"}};
+const GLYPHS = {"playstation":"M8.984 2.596v17.547l3.915 1.261V6.688c0-.69.304-1.151.794-.991.636.18.76.814.76 1.505v5.875c2.441 1.193 4.362-.002 4.362-3.152 0-3.237-1.126-4.675-4.438-5.827-1.307-.448-3.728-1.186-5.39-1.502zm4.656 16.241l6.296-2.275c.715-.258.826-.625.246-.818-.586-.192-1.637-.139-2.357.123l-4.205 1.5V14.98l.24-.085s1.201-.42 2.913-.615c1.696-.18 3.785.03 5.437.661 1.848.601 2.04 1.472 1.576 2.072-.465.6-1.622 1.036-1.622 1.036l-8.544 3.107V18.86zM1.807 18.6c-1.9-.545-2.214-1.668-1.352-2.32.801-.586 2.16-1.052 2.16-1.052l5.615-2.013v2.313L4.205 17c-.705.271-.825.632-.239.826.586.195 1.637.15 2.343-.12L8.247 17v2.074c-.12.03-.256.044-.39.073-1.939.331-3.996.196-6.038-.479z","playstation2":"M7.46 13.779v.292h4.142v-3.85h3.796V9.93h-4.115v3.85zm16.248-3.558v1.62h-7.195v2.23H24v-.292h-7.168v-1.646H24V9.929h-7.487v.292zm-16.513 0v1.62H0v2.23h.292v-1.938H7.46V9.929H0v.292Z","playstationportable":"M0 9.93v.296h7.182v1.626H.001v2.217h.295v-1.921h7.182V9.93zm11.29 0v3.844H7.478v.296h4.124v-3.844h3.813V9.93zm5.233 0v.296h7.182v1.626h-7.182v2.217h.296v-1.921H24V9.93z","nintendo":"m4.447 12.546-1.202-1.942h-.864v2.793h.864v-1.942l1.202 1.942h.856v-2.793H4.44l.007 1.942Zm6.828-1.001v-.279h-.451v-.376h-.841v.376h-.458v.279h.458v1.852h.841v-1.852h.451Zm-5.491 1.844h.834v-1.852h-.834v1.852Zm0-2.213h.841v-.572h-.841v.572Zm14.663.233c-.676 0-1.224.467-1.224 1.039 0 .572.548 1.039 1.224 1.039.676 0 1.225-.467 1.225-1.039 0-.572-.549-1.039-1.225-1.039Zm.338 1.431c0 .293-.173.414-.338.414-.165 0-.346-.121-.346-.414v-.783c0-.294.173-.414.346-.414.165 0 .338.12.338.414v.783Zm-2.659-1.212a1.093 1.093 0 0 0-.473-.166c-.601-.053-1.067.482-1.067.971 0 .648.496.881.571.919.285.128.646.135.961-.068v.105h.827v-2.785h-.827c.008 0 .008.595.008 1.024Zm.008.828v.331c0 .286-.196.361-.331.361s-.331-.075-.331-.361v-.662c0-.287.196-.362.331-.362.128 0 .33.075.33.362v.331h.001Zm-9.556-1.001a1.02 1.02 0 0 0-.668.278v-.196h-.834v1.852h.834V12.17c0-.158.172-.339.398-.339.225 0 .383.181.383.339v1.219h.834v-1.008c0-.731-.631-.942-.947-.926Zm6.798 0a1.01 1.01 0 0 0-.668.278v-.196h-.834v1.852h.834V12.17c0-.158.173-.339.398-.339.225 0 .383.181.383.339v1.219h.834v-1.008c0-.731-.631-.942-.947-.926Zm-1.75 1.016c0-.572-.556-1.054-1.232-1.054-.683 0-1.232.467-1.232 1.039 0 .572.549 1.039 1.232 1.039.564 0 1.044-.324 1.187-.76h-.834v.112c0 .339-.225.414-.345.414-.128 0-.353-.075-.353-.413v-.385l1.577.008Zm-1.517-.655a.346.346 0 0 1 .293-.166c.112 0 .225.053.293.166.052.09.052.203.052.361h-.698c0-.158.007-.263.06-.361Zm9.893-.866c0-.09-.068-.135-.203-.135h-.188v.474h.113v-.196h.06l.09.196h.128l-.105-.211c.067-.022.105-.068.105-.128Zm-.218.068h-.06v-.136h.052c.068 0 .105.023.105.068 0 .053-.029.068-.097.068Zm.007-.392a.433.433 0 0 0-.428.43c0 .233.196.429.429.429a.429.429 0 0 0 0-.859h-.001Zm0 .776a.35.35 0 0 1-.345-.346.35.35 0 0 1 .346-.347.35.35 0 0 1 .345.347.35.35 0 0 1-.345.346h-.001Zm-.938-2.364H3.132C1.254 9.03 0 10.386 0 12.004s1.254 2.959 3.14 2.959h17.72c1.886 0 3.14-1.34 3.14-2.959-.007-1.618-1.269-2.966-3.147-2.966Zm-.008 5.202H3.14c-1.495.008-2.404-1.001-2.404-2.236 0-1.235.917-2.228 2.404-2.236h17.705c1.487 0 2.404 1.001 2.404 2.236 0 1.235-.909 2.236-2.404 2.236Z","nintendods":"M.286 10.773v1.142H0v-1.541h.244l1.155 1.123v-1.123h.282v1.541h-.223zm2.86 0v1.142h-.285v-1.541h.244l1.155 1.123v-1.123h.282v1.541h-.223zm5.93 0v1.142h-.285v-1.541h.243l1.156 1.123v-1.123h.282v1.541h-.223zm-6.948-.399h.286v1.541h-.286zm2.738 0h1.672v.265H5.85v1.276h-.297v-1.276h-.687zm1.996 0h1.505v.265H7.144v.346h.946v.265h-.946v.4h1.223v.265H6.862zm5.665.225c.104.137.159.326.159.545 0 .221-.055.409-.159.546-.112.147-.277.225-.477.225h-1.143v-1.541h1.143c.2 0 .365.078.477.225m-.469 1.051c.275 0 .372-.273.372-.506 0-.232-.097-.505-.372-.505h-.876v1.011zm2.494-1.276c.18 0 .327.147.327.327v.887c0 .18-.147.327-.327.327h-1.244a.327.327 0 0 1-.326-.327v-.887c0-.18.146-.327.326-.327zm.053 1.213v-.884c0-.035-.029-.064-.064-.064h-1.222c-.035 0-.064.029-.064.064v.884c0 .034.029.063.064.063h1.222c.035 0 .064-.029.064-.063m-.053.514c.18 0 .327.148.327.327v.888c0 .179-.147.326-.327.326h-1.244c-.18 0-.326-.147-.326-.326v-.888c0-.179.146-.327.326-.327zm.053 1.213v-.884c0-.035-.029-.064-.064-.064h-1.222c-.035 0-.064.029-.064.064v.884c0 .035.029.063.064.063h1.222c.035 0 .064-.028.064-.063m5.128-.322c.296.117.921.212 1.408.212.534 0 .755-.183.755-.413 0-.207-.205-.328-.795-.544-.787-.292-1.365-.521-1.365-1.038 0-.536.695-.851 1.755-.851.569 0 .765.036 1.126.102l.003.508c-.355-.067-.67-.183-1.159-.183-.523 0-.747.166-.747.337 0 .25.344.369.947.583.84.301 1.307.533 1.307 1.04 0 .521-.585.897-1.904.897-.542 0-.916-.036-1.331-.102zm-1.123.414c-.311.14-.898.229-1.412.229h-1.962v-3.27h1.962c.514 0 1.101.09 1.413.231.755.341 1.002.887 1.002 1.405 0 .517-.245 1.063-1.003 1.405m-1.685-2.599h-.629v2.377h.629c.963 0 1.571-.412 1.571-1.183 0-.772-.608-1.194-1.571-1.194m6.4 2.806h-.096v-.378h-.139v-.081h.374v.081h-.139zm.675 0h-.089v-.384h-.001l-.086.384h-.094l-.084-.384h-.001v.384h-.089v-.459h.139l.083.361h.001l.082-.361H24z","nintendo3ds":"M17.653 16.63a.712.712 0 1 0 1.424 0 .712.712 0 1 0-1.424 0m-9.45 4.238h7.575c.3 0 .524-.225.544-.524v-5.175c-.02-.282-.263-.525-.544-.507H8.203a.54.54 0 0 0-.544.525v5.156c0 .301.244.525.544.525zm13.051-3.525a.729.729 0 0 0 .73-.729.73.73 0 1 0-.73.729zm-1.443-.019a.714.714 0 1 0 .001 1.427.714.714 0 0 0-.001-1.427zm-.713-2.137a.712.712 0 1 0 1.424 0 .712.712 0 1 0-1.424 0M2.54 16.612a1.65 1.65 0 1 0 3.3 0 1.65 1.65 0 1 0-3.3 0M21.272 0H2.728A2.73 2.73 0 0 0-.01 2.72v18.542C.009 22.781 1.228 24 2.728 24h18.526a2.753 2.753 0 0 0 2.756-2.719V2.737C23.991 1.219 22.772 0 21.272 0zm1.913 21.281a1.92 1.92 0 0 1-1.912 1.912H2.728a1.92 1.92 0 0 1-1.913-1.912v-8.456h22.369v8.456zm0-9.694H.815v-8.85A1.92 1.92 0 0 1 2.728.824h18.544c1.049 0 1.912.863 1.912 1.913v8.85 M17.409 3.112H6.534c-.3 0-.544.263-.544.563V9.15c0 .3.226.563.544.563h10.875a.548.548 0 0 0 .544-.563V3.656a.543.543 0 0 0-.544-.544z","sega":"M21.229 4.14l-.006 3.33h-10.6c-.219 0-.397.181-.397.399 0 .221.18.399.397.399l2.76-.016c4.346 0 7.868 3.525 7.868 7.869 0 4.348-3.522 7.869-7.869 7.869L2.748 24l.005-3.375h10.635c2.487 0 4.504-2.016 4.504-4.504 0-2.49-2.017-4.506-4.506-4.506l-2.771-.03c-2.06 0-3.727-1.666-3.727-3.72 0-2.061 1.666-3.726 3.723-3.726h10.618zM2.763 19.843l-.004-3.331h10.609c.21 0 .383-.175.383-.387 0-.213-.173-.385-.384-.385h-2.744c-4.345 0-7.867-3.525-7.867-7.871S6.278 0 10.623 0l10.6.003.006 3.35-10.604.003c-2.49 0-4.5 2.019-4.5 4.507 0 2.489 2.024 4.504 4.515 4.504l2.775.03c2.055 0 3.72 1.668 3.72 3.724 0 2.055-1.665 3.719-3.72 3.719H2.765l-.002.003z","retroarch":"M6.84 5.76L8.4 7.68H5.28l-.72 2.88H2.64l.72-2.88H1.44L0 13.44h3.84l-.48 1.92h3.36L4.2 18.24h2.82l2.34-2.88h5.28l2.34 2.88h2.82l-2.52-2.88h3.36l-.48-1.92H24l-1.44-5.76h-1.92l.72 2.88h-1.92l-.72-2.88H15.6l1.56-1.92h-2.04l-1.68 1.92h-2.88L8.88 5.76zm.24 3.84H9v1.92H7.08zm7.925 0h1.92v1.92h-1.92Z"};
+  const BRAND_LIST = Object.values(BRANDS).sort((a, b) => b.m.length - a.m.length);
+  const hostOf = u => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch (e) { return ''; } };
+  function brandFor(u) {
+    let x; try { x = new URL(u); } catch (e) { return null; }
+    const host = x.hostname.replace(/^www\./, ''), full = host + x.pathname;
+    return BRAND_LIST.find(b => b.m.includes('/') ? full.startsWith(b.m) : (host === b.m || host.endsWith('.' + b.m))) || null;
+  }
+  const isDark = hex => { const n = parseInt(hex.slice(1), 16); return ((n >> 16) * .299 + ((n >> 8) & 255) * .587 + (n & 255) * .114) < 50; };
+  const mono = n => n.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase();
+  const TILE_COLORS = ['#7d6bff', '#5b8cff', '#b06bff', '#ff6b9a', '#26c6da', '#9b8cff', '#ff8a5c', '#4ade80'];
+  const colorFor = n => TILE_COLORS[hashOf(n) % TILE_COLORS.length];
+  // A logo mark: brand glyph when known, else the site's favicon, else a coloured monogram (see the error handler below).
+  function mark(a, cls) {
+    if (a.tube) return { html: `<span class="${cls}" style="background:linear-gradient(145deg,#ff3d3d,#8a0d4d)"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span>`, color: '#ff3d6a' };
+    const b = brandFor(a.u);
+    if (b) return { html: `<span class="${cls}${isDark(b.c) ? ' dark' : ''}" style="background:${b.c}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${b.p}"/></svg></span>`, color: isDark(b.c) ? '#8f8aa8' : b.c };
+    const c = colorFor(a.n);
+    return { html: `<span class="${cls} fav" data-mono="${esc(mono(a.n))}" data-color="${c}"><img class="favimg" alt="" src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(hostOf(a.u))}&sz=128"></span>`, color: c };
+  }
+  document.addEventListener('error', e => {
+    const img = e.target;
+    if (!(img instanceof HTMLImageElement)) return;
+    if (img.classList.contains('favimg')) {
+      const ico = img.parentNode; ico.classList.remove('fav'); ico.classList.add('mono'); ico.style.background = ico.dataset.color; ico.textContent = ico.dataset.mono;
+    } else if (img.classList.contains('poster')) img.remove(); // the gradient behind stays as the card art
+  }, true);
+
+  /* ---------- Card builders ---------- */
+  const filmCard = (f, i) => `<button class="card film" data-film="${i}" style="background:${gradFor(f.t)}">
+      <img class="poster" src="${f.img}" alt="" loading="lazy"><span class="shade"></span>
+      <span class="play-badge"><svg><use href="#i-play"/></svg></span>
+      <span class="meta"><b>${esc(f.t)}</b><span>${f.y} · ${f.m} นาที · ${esc(f.g)}</span></span></button>`;
+  function svcCard(a, i, list) {
+    const m = mark(a, 'logo-mark');
+    const attrs = a.tube ? 'data-tube="1" role="button"' : `href="${esc(a.u)}" target="_blank" rel="noopener"`;
+    const tag = a.tube ? '<span class="tag">ในแอป</span>' : '';
+    return `<${a.tube ? 'button' : 'a'} class="card svc" ${attrs} style="--c:${m.color}"><span class="glow"></span>${m.html}<span class="name">${esc(a.n)}</span>${tag}</${a.tube ? 'button' : 'a'}>`;
+  }
+  const gameCard = (g, i) => `<${g.url ? 'a' : 'button'} class="card game" ${g.url ? `href="${g.url}" target="_blank" rel="noopener"` : `data-game="${i}"`} style="--g:${g.g}">
+      <span class="gtag">${g.tag}</span><svg class="glyph" viewBox="0 0 24 24"><path d="${GLYPHS[g.glyph]}"/></svg>
+      <span class="gname">${esc(g.n)}</span><span class="gsub">${esc(g.sub)}${g.url ? ' ↗' : ''}</span></${g.url ? 'a' : 'button'}>`;
+  const radioCard = (r, i) => `<button class="card station" data-radio="${i}"><span class="art" style="--g:${gradFor(r.id)}"><svg><use href="#i-radio"/></svg></span>
+      <span class="cap"><b>${esc(r.name)}</b><span>${esc(r.sub)}</span></span></button>`;
+
+  function renderCatalogue() {
+    $('#homeFilms').innerHTML = FILMS.map(filmCard).join('');
+    $('#allFilms').innerHTML = FILMS.map(filmCard).join('');
+    $('#homeServices').innerHTML = MOVIE_SERVICES.map(svcCard).join('');
+    $('#allServices').innerHTML = MOVIE_SERVICES.map(svcCard).join('');
+    $('#musicServices').innerHTML = MUSIC_SERVICES.map(svcCard).join('');
+    $('#homeGames').innerHTML = GAMES.map(gameCard).join('');
+    $('#allGames').innerHTML = GAMES.map(gameCard).join('');
+    renderRadio();
+  }
+  function renderRadio() {
+    const html = RADIO.map(radioCard).join('');
+    $('#homeRadio').innerHTML = html; $('#allRadio').innerHTML = html;
+    $$('[data-radio]').forEach(b => {
+      const live = now && now.live && now.id === RADIO[+b.dataset.radio].id;
+      b.classList.toggle('live', !!live);
+      const sub = $('.cap span', b); sub.innerHTML = live && !audio.paused ? '<span class="eq"><i></i><i></i><i></i></span>กำลังเล่น' : esc(RADIO[+b.dataset.radio].sub);
+    });
+  }
+
+  /* ---------- Hero carousel ---------- */
+  let heroIdx = 0, heroTimer;
+  function showHero(i) {
+    heroIdx = (i + 4) % 4;
+    const f = FILMS[heroIdx];
+    $('#heroTitle').textContent = f.t;
+    $('#heroDesc').textContent = f.d;
+    $('#heroChips').innerHTML = [f.y, f.m + ' นาที', f.g, 'HD'].map(c => `<span class="chip">${esc(c)}</span>`).join('');
+    $('#heroPoster').style.backgroundImage = `url("${f.img}")`;
+    $('#heroDots').innerHTML = [0, 1, 2, 3].map(k => `<button class="dot${k === heroIdx ? ' on' : ''}" data-hero="${k}" aria-label="เรื่องที่ ${k + 1}"></button>`).join('');
+    clearTimeout(heroTimer); heroTimer = setTimeout(() => showHero(heroIdx + 1), 10000);
+  }
+  $('#heroDots').addEventListener('click', e => { const d = e.target.closest('[data-hero]'); if (d) showHero(+d.dataset.hero); });
+  $('#heroPlay').onclick = () => openVideo(FILMS[heroIdx].t, FILMS[heroIdx].url);
+
+  /* ---------- Video overlay + SmartTube ---------- */
+  const ov = $('#overlay'), ovVideo = $('#ovVideo'), ovFrame = $('#ovFrame');
+  let resumeAudio = false;
+  function openOverlay(title) {
+    resumeAudio = !audio.paused; audio.pause();
+    $('#ovTitle').textContent = title; ov.hidden = false;
+  }
+  function openVideo(title, url) {
+    openOverlay(title);
+    ovFrame.hidden = true; ovFrame.src = 'about:blank';
+    ovVideo.hidden = false; ovVideo.src = url;
+    ovVideo.play().catch(() => {});
+  }
+  function closeOverlay() {
+    ovVideo.pause(); ovVideo.removeAttribute('src'); ovVideo.load();
+    ovFrame.src = 'about:blank'; ov.hidden = true;
+    if (resumeAudio) audio.play().catch(() => {});
+  }
+  $('#ovClose').onclick = closeOverlay;
+  addEventListener('keydown', e => { if (e.key === 'Escape' && !ov.hidden) closeOverlay(); });
+
+  function parseYouTube(text) {
+    let u; try { u = new URL(text.trim().startsWith('http') ? text.trim() : 'https://' + text.trim()); } catch (e) { return null; }
+    const list = u.searchParams.get('list');
+    let id = u.searchParams.get('v');
+    if (!id && /youtu\.be$/.test(u.hostname)) id = u.pathname.slice(1);
+    if (!id) { const m = u.pathname.match(/\/(shorts|embed|live)\/([\w-]{6,})/); if (m) id = m[2]; }
+    if (id) return 'https://www.youtube-nocookie.com/embed/' + encodeURIComponent(id) + '?autoplay=1&rel=0&playsinline=1' + (list ? '&list=' + encodeURIComponent(list) : '');
+    if (list) return 'https://www.youtube-nocookie.com/embed/videoseries?autoplay=1&rel=0&list=' + encodeURIComponent(list);
+    return null;
+  }
+  let tubeRecent = store.get('tube', []);
+  function openTubeSheet() {
+    const wrap = document.createElement('div');
+    wrap.className = 'sheet-backdrop';
+    wrap.innerHTML = `<form class="sheet" autocomplete="off">
+        <div class="eyebrow">YouTube แบบทีวี</div>
+        <h2>SmartTube</h2>
+        <p class="hint">SmartTube ตัวจริงเป็นแอป Android TV ติดตั้งในเบราว์เซอร์ของ Tesla ไม่ได้ Tesaro จึงมีเครื่องเล่น YouTube เต็มจอในแอปแทน วางลิงก์วิดีโอหรือเพลย์ลิสต์แล้วกดเล่น หรือพิมพ์คำค้นเพื่อค้นใน YouTube</p>
+        <input class="field" id="tubeIn" placeholder="ลิงก์ YouTube หรือคำค้น" inputmode="url">
+        <div class="err" id="tubeErr"></div>
+        ${tubeRecent.length ? `<div class="eyebrow">เล่นล่าสุด</div><div class="list">${tubeRecent.map((r, i) => `<button type="button" class="list-item" data-tr="${i}"><svg><use href="#i-history"/></svg><span class="grow">${esc(r)}</span></button>`).join('')}</div>` : ''}
+        <div class="sheet-actions">
+          <button type="button" class="btn" data-x>ปิด</button>
+          <a class="btn" id="tubeSearch" target="_blank" rel="noopener" href="https://www.youtube.com"><svg><use href="#i-open"/></svg>ค้นใน YouTube</a>
+          <button class="btn primary"><svg><use href="#i-play"/></svg>เล่นในแอป</button>
+        </div>
+      </form>`;
+    document.body.append(wrap);
+    const input = $('#tubeIn', wrap), search = $('#tubeSearch', wrap);
+    const close = () => wrap.remove();
+    input.addEventListener('input', () => {
+      const q = input.value.trim();
+      search.href = q && !parseYouTube(q) ? 'https://www.youtube.com/results?search_query=' + encodeURIComponent(q) : 'https://www.youtube.com';
+    });
+    const play = link => {
+      const src = parseYouTube(link);
+      if (!src) { $('#tubeErr', wrap).textContent = 'ยังไม่ใช่ลิงก์ YouTube ลองวางลิงก์วิดีโอ หรือกด "ค้นใน YouTube"'; return; }
+      tubeRecent = [link, ...tubeRecent.filter(x => x !== link)].slice(0, 5); store.set('tube', tubeRecent);
+      close(); openOverlay('SmartTube');
+      ovVideo.pause(); ovVideo.hidden = true; ovFrame.hidden = false; ovFrame.src = src;
+    };
+    wrap.addEventListener('click', e => {
+      if (e.target === wrap || e.target.closest('[data-x]')) close();
+      const r = e.target.closest('[data-tr]'); if (r) play(tubeRecent[+r.dataset.tr]);
+    });
+    $('form', wrap).addEventListener('submit', e => { e.preventDefault(); play(input.value); });
+    setTimeout(() => input.focus(), 40);
+  }
+  $('#openTube').onclick = openTubeSheet;
+
+  // Videos from USB
+  const myVideos = [];
+  $('#videoIn').addEventListener('change', e => {
+    [...e.target.files].forEach(f => myVideos.push({ t: f.name.replace(/\.[^.]+$/, ''), url: URL.createObjectURL(f) }));
+    e.target.value = '';
+    $('#myVideosRow').hidden = !myVideos.length;
+    $('#myVideos').innerHTML = myVideos.map((v, i) => `<button class="card film" data-myvid="${i}" style="background:${gradFor(v.t)}"><span class="shade"></span>
+      <span class="play-badge"><svg><use href="#i-play"/></svg></span><span class="meta"><b>${esc(v.t)}</b><span>จาก USB</span></span></button>`).join('');
+    if (myVideos.length) toast('เพิ่มวิดีโอแล้ว แตะเพื่อเล่น');
+  });
+
+  document.addEventListener('click', e => {
+    const f = e.target.closest('[data-film]'); if (f) { const x = FILMS[+f.dataset.film]; openVideo(x.t, x.url); return; }
+    const v = e.target.closest('[data-myvid]'); if (v) { const x = myVideos[+v.dataset.myvid]; openVideo(x.t, x.url); return; }
+    if (e.target.closest('[data-tube]')) { openTubeSheet(); return; }
+    const g = e.target.closest('[data-game]'); if (g) { location.href = 'play/?sys=' + GAMES[+g.dataset.game].sys; return; }
+    const r = e.target.closest('[data-radio]'); if (r) { playRadio(+r.dataset.radio); return; }
+  });
+
+  /* ---------- Audio: radio + local files ---------- */
+  const audio = $('#audio');
+  let queue = [], qIdx = -1, now = null, radioIdx = -1;
+  const fmt = s => isFinite(s) ? Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0') : '0:00';
+  function renderMedia() {
+    $('#mini').hidden = !now;
+    $$('[data-art]').forEach(e => { const a = now && now.art; e.classList.toggle('has-img', !!a); e.style.backgroundImage = a ? 'url("' + a + '")' : ''; });
+    $$('[data-bind="title"]').forEach(e => e.textContent = now ? now.name : 'ยังไม่ได้เล่นอะไร');
+    $$('[data-bind="sub"]').forEach(e => e.textContent = !now ? 'เลือกสถานีวิทยุ หรือเพิ่มไฟล์เพลง'
+      : now.live ? 'วิทยุออนไลน์ · ' + now.sub : (now.artist ? now.artist + ' · ' : '') + `เพลงที่ ${qIdx + 1} จาก ${queue.length}`);
+    $$('[data-bind="playicon"]').forEach(e => e.setAttribute('href', audio.paused ? '#i-play' : '#i-pause'));
+    $('#playlist').innerHTML = queue.length
+      ? queue.map((q, i) => `<button class="list-item${now === q ? ' active' : ''}" data-track="${i}"><svg><use href="#i-music"/></svg><span class="grow">${esc(q.name)}</span><span class="km">${esc(q.artist || '')}</span></button>`).join('')
+      : '<p class="hint" style="padding:.75rem">กด "เพิ่มเพลงจาก USB" แล้วเลือกไฟล์ จะแสดงปกอัลบั้มและชื่อศิลปินจากไฟล์ให้</p>';
+    renderRadio();
+    if ('mediaSession' in navigator && now) {
+      try { navigator.mediaSession.metadata = new MediaMetadata({ title: now.name, artist: now.live ? 'Tesaro Radio' : (now.artist || 'Tesaro'), artwork: now.art ? [{ src: now.art }] : [] }); } catch (e) {}
+    }
+  }
+  function playSource(item) {
+    now = item; audio.src = item.url;
+    audio.play().catch(() => toast(item.live ? 'เปิดสถานีนี้ไม่ได้ ลองสถานีอื่น' : 'เล่นไฟล์นี้ไม่ได้'));
+    renderMedia();
+  }
+  function playRadio(i) {
+    radioIdx = (i + RADIO.length) % RADIO.length;
+    if (now === RADIO[radioIdx] && !audio.paused) { audio.pause(); return; }
+    playSource(RADIO[radioIdx]);
+  }
+  function playTrack(i) {
+    if (!queue.length) return;
+    qIdx = (i + queue.length) % queue.length; playSource(queue[qIdx]);
+  }
+  $('#fileIn').addEventListener('change', e => {
+    const files = [...e.target.files];
+    if (!files.length) return;
+    const start = queue.length;
+    files.forEach(f => {
+      const item = { name: f.name.replace(/\.[^.]+$/, ''), url: URL.createObjectURL(f) };
+      queue.push(item);
+      // Title, artist and cover art embedded in the file, when the tag reader is available.
+      if (window.jsmediatags) jsmediatags.read(f, { onSuccess: ({ tags }) => {
+        if (tags.title) item.name = tags.title;
+        if (tags.artist) item.artist = tags.artist;
+        if (tags.picture) item.art = URL.createObjectURL(new Blob([new Uint8Array(tags.picture.data)], { type: tags.picture.format }));
+        renderMedia();
+      }, onError: () => {} });
+    });
+    toast(`เพิ่ม ${files.length} เพลงแล้ว`);
+    if (!now || now.live) playTrack(start); else renderMedia();
+    e.target.value = '';
+  });
+  const step = d => now && now.live ? playRadio(radioIdx + d) : playTrack(qIdx + d);
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-act]');
+    if (b) {
+      e.stopPropagation();
+      if (!now) { go('music'); toast('เลือกสถานีวิทยุ หรือเพิ่มเพลงก่อน'); return; }
+      if (b.dataset.act === 'toggle') audio.paused ? audio.play().catch(() => {}) : audio.pause();
+      if (b.dataset.act === 'next') step(1);
+      if (b.dataset.act === 'prev') (!now.live && audio.currentTime > 3) ? (audio.currentTime = 0) : step(-1);
+      return;
+    }
+    const tr = e.target.closest('[data-track]'); if (tr) playTrack(+tr.dataset.track);
+  });
+  $('#seekBar').addEventListener('click', e => {
+    if (!audio.duration || !isFinite(audio.duration)) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    audio.currentTime = ((e.clientX - r.left) / r.width) * audio.duration;
+  });
+  audio.addEventListener('timeupdate', () => {
+    const live = !isFinite(audio.duration);
+    const p = live ? 100 : audio.duration ? (audio.currentTime / audio.duration) * 100 : 0;
+    $$('[data-bind="bar"]').forEach(e => e.style.width = p + '%');
+    $$('[data-bind="cur"]').forEach(e => e.textContent = fmt(audio.currentTime));
+    $$('[data-bind="dur"]').forEach(e => e.textContent = live ? 'LIVE' : fmt(audio.duration));
+  });
+  ['play', 'pause'].forEach(ev => audio.addEventListener(ev, renderMedia));
+  audio.addEventListener('ended', () => { if (now && !now.live) playTrack(qIdx + 1); });
+  if ('mediaSession' in navigator) {
+    try {
+      navigator.mediaSession.setActionHandler('nexttrack', () => step(1));
+      navigator.mediaSession.setActionHandler('previoustrack', () => step(-1));
+    } catch (e) {}
+  }
 
   /* ---------- Map ---------- */
   let map = null, marker = null, follow = true, gpsOk = false;
   let pos = store.get('lastPos', [13.7563, 100.5018]); // Bangkok until GPS answers
   const mapEl = $('#map');
-  const mapSearchEl = $('#mapSearch');
-  const accent = () => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#8ab4f8';
-  function placeMap() {
-    const host = current === 'nav' ? $('#navMapHost') : $('#homeMapHost');
-    if (mapEl.parentNode !== host) host.append(mapEl, mapSearchEl, $('#navBanner'), $('#mapBtns'), $('#speedBubble'));
-    mapSearchEl.hidden = current === 'nav' || NAV.active;
-    if (map) setTimeout(() => map.invalidateSize(), 30);
-  }
+  const accent = () => '#9d8cff';
+  function placeMap() { if (map) setTimeout(() => map.invalidateSize(), 30); syncChip(); }
   function initMap() {
-    placeMap();
     if (!window.L) { mapEl.classList.add('offline'); return; }
     map = L.map(mapEl, { zoomControl: false, attributionControl: true }).setView(pos, 15);
     map.attributionControl.setPrefix('');
-    // Dark CARTO tiles first; if they fail, fall back to standard OpenStreetMap tiles darkened with a filter.
+    // Dark CARTO tiles first; if they fail, standard OpenStreetMap tiles darkened with a filter.
     const providers = [
       ['https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { subdomains: 'abcd', maxZoom: 20, attribution: '© OpenStreetMap © CARTO' }, false],
       ['https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }, true]
@@ -1362,6 +1800,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     useProvider(0);
     marker = L.marker(pos, { icon: L.divIcon({ className: 'me', html: '<div class="me-dot"></div>', iconSize: [28, 28], iconAnchor: [14, 14] }), zIndexOffset: 1000 }).addTo(map);
     map.on('dragstart', () => setFollow(false));
+    if (NAV.route) drawRoute();
   }
   function setFollow(on) {
     follow = on; $('#follow').classList.toggle('on', on);
@@ -1370,6 +1809,15 @@ svg.leaflet-image-layer.leaflet-interactive path {
   $('#follow').onclick = () => setFollow(true);
   $('#zoomIn').onclick = () => map && map.zoomIn();
   $('#zoomOut').onclick = () => map && map.zoomOut();
+  function syncChip() {
+    const show = NAV.active && current !== 'map';
+    $('#navChip').hidden = !show;
+    if (!show) return;
+    $('#chipDist').textContent = $('#bDist').textContent;
+    $('#chipText').textContent = $('#bText').textContent;
+    $('#chipIcon use').setAttribute('href', $('#bIcon use').getAttribute('href'));
+    $('#chipIcon').style.transform = $('#bIcon').style.transform;
+  }
 
   /* ---------- GPS + speed + weather ---------- */
   let weatherLoaded = false;
@@ -1379,9 +1827,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
       navigator.geolocation.watchPosition(p => {
         pos = [p.coords.latitude, p.coords.longitude];
         store.set('lastPos', pos);
+        gpsOk = true;
         gpsState('ใช้งานได้ ความแม่นยำ ±' + Math.round(p.coords.accuracy) + ' ม.');
         if (marker) marker.setLatLng(pos);
-        gpsOk = true;
         if (map && follow) map.panTo(pos);
         navTick(p.coords.speed);
         const s = p.coords.speed;
@@ -1391,21 +1839,20 @@ svg.leaflet-image-layer.leaflet-interactive path {
     } catch (e) { gpsState('ใช้ไม่ได้ในหน้านี้'); }
   } else gpsState('เบราว์เซอร์นี้ไม่มี GPS');
 
-  const WMO = { 0: 'ท้องฟ้าแจ่มใส', 1: 'มีเมฆเล็กน้อย', 2: 'มีเมฆบางส่วน', 3: 'เมฆมาก', 45: 'หมอก', 48: 'หมอก', 51: 'ฝนปรอย', 53: 'ฝนปรอย', 55: 'ฝนปรอย', 61: 'ฝนเล็กน้อย', 63: 'ฝนปานกลาง', 65: 'ฝนหนัก', 80: 'ฝนซู่', 81: 'ฝนซู่', 82: 'ฝนซู่หนัก', 95: 'พายุฝนฟ้าคะนอง', 96: 'พายุฝนฟ้าคะนอง', 99: 'พายุฝนฟ้าคะนอง' };
+  const WMO = { 0: 'ฟ้าใส', 1: 'เมฆน้อย', 2: 'มีเมฆบางส่วน', 3: 'เมฆมาก', 45: 'หมอก', 48: 'หมอก', 51: 'ฝนปรอย', 53: 'ฝนปรอย', 55: 'ฝนปรอย', 61: 'ฝนเล็กน้อย', 63: 'ฝนปานกลาง', 65: 'ฝนหนัก', 80: 'ฝนซู่', 81: 'ฝนซู่', 82: 'ฝนซู่หนัก', 95: 'พายุฝน', 96: 'พายุฝน', 99: 'พายุฝน' };
   async function loadWeather() {
     weatherLoaded = true;
     try {
       const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${pos[0].toFixed(3)}&longitude=${pos[1].toFixed(3)}&current=temperature_2m,weather_code&timezone=auto`);
       const j = await r.json();
       $('#wTemp').textContent = Math.round(j.current.temperature_2m) + '°';
-      $('#wDesc').textContent = WMO[j.current.weather_code] || 'สภาพอากาศ';
-    } catch (e) { $('#wTemp').textContent = '--°'; $('#wDesc').textContent = 'ไม่มีข้อมูลอากาศ'; }
+      $('#wDesc').textContent = WMO[j.current.weather_code] || 'อากาศ';
+    } catch (e) { $('#wDesc').textContent = 'ไม่มีข้อมูล'; }
   }
   setTimeout(() => { if (!weatherLoaded) loadWeather(); }, 4000);
 
   /* ---------- Navigation: search (OpenStreetMap Nominatim), routing (OSRM), turn-by-turn ---------- */
   const NAV = { active: false, dest: null, route: null, coords: [], steps: [], stepIdx: 1, spoken: {}, offCount: 0, lastReroute: 0, line: null, casing: null, pin: null };
-  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const distM = (a, b) => {
     const R = 6371000, k = Math.PI / 180, dLat = (b[0] - a[0]) * k, dLng = (b[1] - a[1]) * k;
     const x = Math.sin(dLat / 2) ** 2 + Math.cos(a[0] * k) * Math.cos(b[0] * k) * Math.sin(dLng / 2) ** 2;
@@ -1585,6 +2032,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     const rem = remainingDist(d);
     const secs = NAV.route.duration * (rem / Math.max(1, NAV.route.distance));
     $('#bEta').textContent = `เหลือ ${fmtDist(rem)} · ${fmtDur(secs)} · ถึง ${clockAt(secs)}`;
+    syncChip();
     return d;
   }
   // Called on every GPS fix while navigating: advance steps, speak, and reroute when off the line.
@@ -1611,78 +2059,44 @@ svg.leaflet-image-layer.leaflet-interactive path {
     }
   }
 
+
   /* ---------- Apps ---------- */
-  const BRANDS = {"youtube":{"m":"youtube.com","c":"#FF0000","p":"M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"},"youtubemusic":{"m":"music.youtube.com","c":"#FF0000","p":"M12 0C5.376 0 0 5.376 0 12s5.376 12 12 12 12-5.376 12-12S18.624 0 12 0zm0 19.104c-3.924 0-7.104-3.18-7.104-7.104S8.076 4.896 12 4.896s7.104 3.18 7.104 7.104-3.18 7.104-7.104 7.104zm0-13.332c-3.432 0-6.228 2.796-6.228 6.228S8.568 18.228 12 18.228s6.228-2.796 6.228-6.228S15.432 5.772 12 5.772zM9.684 15.54V8.46L15.816 12l-6.132 3.54z"},"spotify":{"m":"spotify.com","c":"#1ED760","p":"M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"},"applemusic":{"m":"music.apple.com","c":"#FA243C","p":"M23.994 6.124a9.23 9.23 0 00-.24-2.19c-.317-1.31-1.062-2.31-2.18-3.043a5.022 5.022 0 00-1.877-.726 10.496 10.496 0 00-1.564-.15c-.04-.003-.083-.01-.124-.013H5.986c-.152.01-.303.017-.455.026-.747.043-1.49.123-2.193.4-1.336.53-2.3 1.452-2.865 2.78-.192.448-.292.925-.363 1.408-.056.392-.088.785-.1 1.18 0 .032-.007.062-.01.093v12.223c.01.14.017.283.027.424.05.815.154 1.624.497 2.373.65 1.42 1.738 2.353 3.234 2.801.42.127.856.187 1.293.228.555.053 1.11.06 1.667.06h11.03a12.5 12.5 0 001.57-.1c.822-.106 1.596-.35 2.295-.81a5.046 5.046 0 001.88-2.207c.186-.42.293-.87.37-1.324.113-.675.138-1.358.137-2.04-.002-3.8 0-7.595-.003-11.393zm-6.423 3.99v5.712c0 .417-.058.827-.244 1.206-.29.59-.76.962-1.388 1.14-.35.1-.706.157-1.07.173-.95.045-1.773-.6-1.943-1.536a1.88 1.88 0 011.038-2.022c.323-.16.67-.25 1.018-.324.378-.082.758-.153 1.134-.24.274-.063.457-.23.51-.516a.904.904 0 00.02-.193c0-1.815 0-3.63-.002-5.443a.725.725 0 00-.026-.185c-.04-.15-.15-.243-.304-.234-.16.01-.318.035-.475.066-.76.15-1.52.303-2.28.456l-2.325.47-1.374.278c-.016.003-.032.01-.048.013-.277.077-.377.203-.39.49-.002.042 0 .086 0 .13-.002 2.602 0 5.204-.003 7.805 0 .42-.047.836-.215 1.227-.278.64-.77 1.04-1.434 1.233-.35.1-.71.16-1.075.172-.96.036-1.755-.6-1.92-1.544-.14-.812.23-1.685 1.154-2.075.357-.15.73-.232 1.108-.31.287-.06.575-.116.86-.177.383-.083.583-.323.6-.714v-.15c0-2.96 0-5.922.002-8.882 0-.123.013-.25.042-.37.07-.285.273-.448.546-.518.255-.066.515-.112.774-.165.733-.15 1.466-.296 2.2-.444l2.27-.46c.67-.134 1.34-.27 2.01-.403.22-.043.442-.088.663-.106.31-.025.523.17.554.482.008.073.012.148.012.223.002 1.91.002 3.822 0 5.732z"},"soundcloud":{"m":"soundcloud.com","c":"#FF5500","p":"M23.999 14.165c-.052 1.796-1.612 3.169-3.4 3.169h-8.18a.68.68 0 0 1-.675-.683V7.862a.747.747 0 0 1 .452-.724s.75-.513 2.333-.513a5.364 5.364 0 0 1 2.763.755 5.433 5.433 0 0 1 2.57 3.54c.282-.08.574-.121.868-.12.884 0 1.73.358 2.347.992s.948 1.49.922 2.373ZM10.721 8.421c.247 2.98.427 5.697 0 8.672a.264.264 0 0 1-.53 0c-.395-2.946-.22-5.718 0-8.672a.264.264 0 0 1 .53 0ZM9.072 9.448c.285 2.659.37 4.986-.006 7.655a.277.277 0 0 1-.55 0c-.331-2.63-.256-5.02 0-7.655a.277.277 0 0 1 .556 0Zm-1.663-.257c.27 2.726.39 5.171 0 7.904a.266.266 0 0 1-.532 0c-.38-2.69-.257-5.21 0-7.904a.266.266 0 0 1 .532 0Zm-1.647.77a26.108 26.108 0 0 1-.008 7.147.272.272 0 0 1-.542 0 27.955 27.955 0 0 1 0-7.147.275.275 0 0 1 .55 0Zm-1.67 1.769c.421 1.865.228 3.5-.029 5.388a.257.257 0 0 1-.514 0c-.21-1.858-.398-3.549 0-5.389a.272.272 0 0 1 .543 0Zm-1.655-.273c.388 1.897.26 3.508-.01 5.412-.026.28-.514.283-.54 0-.244-1.878-.347-3.54-.01-5.412a.283.283 0 0 1 .56 0Zm-1.668.911c.4 1.268.257 2.292-.026 3.572a.257.257 0 0 1-.514 0c-.241-1.262-.354-2.312-.023-3.572a.283.283 0 0 1 .563 0Z"},"googlemaps":{"m":"google.com/maps","c":"#4285F4","p":"M19.527 4.799c1.212 2.608.937 5.678-.405 8.173-1.101 2.047-2.744 3.74-4.098 5.614-.619.858-1.244 1.75-1.669 2.727-.141.325-.263.658-.383.992-.121.333-.224.673-.34 1.008-.109.314-.236.684-.627.687h-.007c-.466-.001-.579-.53-.695-.887-.284-.874-.581-1.713-1.019-2.525-.51-.944-1.145-1.817-1.79-2.671L19.527 4.799zM8.545 7.705l-3.959 4.707c.724 1.54 1.821 2.863 2.871 4.18.247.31.494.622.737.936l4.984-5.925-.029.01c-1.741.601-3.691-.291-4.392-1.987a3.377 3.377 0 0 1-.209-.716c-.063-.437-.077-.761-.004-1.198l.001-.007zM5.492 3.149l-.003.004c-1.947 2.466-2.281 5.88-1.117 8.77l4.785-5.689-.058-.05-3.607-3.035zM14.661.436l-3.838 4.563a.295.295 0 0 1 .027-.01c1.6-.551 3.403.15 4.22 1.626.176.319.323.683.377 1.045.068.446.085.773.012 1.22l-.003.016 3.836-4.561A8.382 8.382 0 0 0 14.67.439l-.009-.003zM9.466 5.868L14.162.285l-.047-.012A8.31 8.31 0 0 0 11.986 0a8.439 8.439 0 0 0-6.169 2.766l-.016.018 3.665 3.084z"},"waze":{"m":"waze.com","c":"#33CCFF","p":"M13.218 0C9.915 0 6.835 1.49 4.723 4.148c-1.515 1.913-2.31 4.272-2.31 6.706v1.739c0 .894-.62 1.738-1.862 1.813-.298.025-.547.224-.547.522-.05.82.82 2.31 2.012 3.502.82.844 1.788 1.515 2.832 2.036a3 3 0 0 0 2.955 3.528 2.966 2.966 0 0 0 2.931-2.385h2.509c.323 1.689 2.086 2.856 3.974 2.21 1.64-.546 2.36-2.409 1.763-3.924a12.84 12.84 0 0 0 1.838-1.465 10.73 10.73 0 0 0 3.18-7.65c0-2.882-1.118-5.589-3.155-7.625A10.899 10.899 0 0 0 13.218 0zm0 1.217c2.558 0 4.967.994 6.78 2.807a9.525 9.525 0 0 1 2.807 6.78A9.526 9.526 0 0 1 20 17.585a9.647 9.647 0 0 1-6.78 2.807h-2.46a3.008 3.008 0 0 0-2.93-2.41 3.03 3.03 0 0 0-2.534 1.367v.024a8.945 8.945 0 0 1-2.41-1.788c-.844-.844-1.316-1.614-1.515-2.11a2.858 2.858 0 0 0 1.441-.846 2.959 2.959 0 0 0 .795-2.036v-1.789c0-2.11.696-4.197 2.012-5.861 1.863-2.385 4.62-3.726 7.6-3.726zm-2.41 5.986a1.192 1.192 0 0 0-1.191 1.192 1.192 1.192 0 0 0 1.192 1.193A1.192 1.192 0 0 0 12 8.395a1.192 1.192 0 0 0-1.192-1.192zm7.204 0a1.192 1.192 0 0 0-1.192 1.192 1.192 1.192 0 0 0 1.192 1.193 1.192 1.192 0 0 0 1.192-1.193 1.192 1.192 0 0 0-1.192-1.192zm-7.377 4.769a.596.596 0 0 0-.546.845 4.813 4.813 0 0 0 4.346 2.757 4.77 4.77 0 0 0 4.347-2.757.596.596 0 0 0-.547-.845h-.025a.561.561 0 0 0-.521.348 3.59 3.59 0 0 1-3.254 2.061 3.591 3.591 0 0 1-3.254-2.061.64.64 0 0 0-.546-.348z"},"netflix":{"m":"netflix.com","c":"#E50914","p":"M5.398 0v.006c3.028 8.556 5.37 15.175 8.348 23.596 2.344.058 4.85.398 4.854.398-2.8-7.924-5.923-16.747-8.487-24zm8.489 0v9.63L18.6 22.951c-.043-7.86-.004-15.913.002-22.95zM5.398 1.05V24c1.873-.225 2.81-.312 4.715-.398v-9.22z"},"primevideo":{"m":"primevideo.com","c":"#1F2E3E","p":"M0 9.508c0-.043.01-.073.028-.09.018-.017.047-.025.086-.025h.329c.07 0 .112.034.127.101l.032.119c.091-.088.202-.159.33-.21a1.04 1.04 0 0 1 .396-.079c.294 0 .528.109.7.326.171.217.257.51.257.88 0 .254-.042.475-.127.665-.086.19-.201.335-.347.437a.85.85 0 0 1-.502.154c-.125 0-.243-.02-.355-.06a.857.857 0 0 1-.288-.164v1.003c0 .043-.008.073-.025.09-.017.016-.046.025-.09.025H.115c-.04 0-.068-.009-.086-.025-.019-.017-.028-.047-.028-.09zm1.113.32a.868.868 0 0 0-.447.124v1.206a.834.834 0 0 0 .447.124c.17 0 .296-.058.376-.174.081-.117.121-.3.121-.55 0-.254-.04-.439-.118-.555-.08-.116-.206-.174-.379-.174zm2.248-.087c.121-.134.236-.23.344-.286a.733.733 0 0 1 .345-.085h.063c.043 0 .073.009.092.025.018.017.027.047.027.09v.385c0 .04-.008.068-.025.087-.017.018-.046.027-.089.027a.923.923 0 0 1-.082-.004 1.369 1.369 0 0 0-.383.025c-.1.02-.186.045-.256.076v1.54c0 .04-.008.069-.025.087-.016.018-.046.028-.089.028h-.437c-.04 0-.069-.01-.087-.028-.018-.018-.028-.047-.028-.087V9.508c0-.043.01-.073.028-.09.018-.017.047-.025.087-.025h.328c.07 0 .112.034.128.1zm1.526-.71a.396.396 0 0 1-.278-.096.338.338 0 0 1-.105-.262c0-.11.035-.197.105-.26a.395.395 0 0 1 .278-.097c.116 0 .208.032.278.096.07.064.105.151.105.261a.34.34 0 0 1-.105.262.396.396 0 0 1-.278.096zm-.333.477c0-.043.01-.073.027-.09.019-.017.048-.025.087-.025h.438c.043 0 .072.008.089.025s.025.047.025.09v2.113c0 .04-.008.069-.025.087-.017.018-.046.028-.09.028h-.437c-.04 0-.068-.01-.087-.028-.018-.018-.027-.047-.027-.087zm1.837.11c.161-.107.306-.183.435-.227.13-.045.263-.067.4-.067.273 0 .466.098.579.294.155-.104.3-.18.438-.225.137-.046.278-.069.424-.069.213 0 .377.06.495.179.117.12.175.286.175.5v1.618c0 .04-.008.069-.025.087-.017.019-.046.027-.089.027h-.438c-.04 0-.068-.008-.086-.027-.018-.018-.028-.047-.028-.087V10.15c0-.208-.092-.312-.278-.312-.164 0-.33.04-.497.119v1.664c0 .04-.008.069-.025.087-.017.019-.046.027-.09.027h-.437c-.04 0-.068-.008-.086-.027-.019-.018-.028-.047-.028-.087V10.15c0-.208-.093-.312-.278-.312-.17 0-.337.04-.502.123v1.66c0 .04-.008.069-.025.087-.017.019-.046.027-.089.027h-.438c-.039 0-.068-.008-.086-.027-.018-.018-.027-.047-.027-.087V9.508c0-.043.009-.073.027-.09.018-.017.047-.025.086-.025h.329c.07 0 .112.034.128.101zm4.387 1.16a1.81 1.81 0 0 1-.451-.05c.018.204.08.35.185.44.105.088.263.132.476.132.085 0 .168-.005.249-.016a3.08 3.08 0 0 0 .362-.078.143.143 0 0 1 .023-.002c.052 0 .078.035.078.105v.211c0 .049-.007.083-.02.103a.169.169 0 0 1-.08.053 1.953 1.953 0 0 1-.708.128c-.377 0-.666-.103-.868-.312-.203-.207-.304-.505-.304-.893 0-.398.104-.71.31-.935.207-.227.494-.34.862-.34.283 0 .504.069.664.206a.69.69 0 0 1 .24.55c0 .23-.087.403-.258.52-.172.119-.425.177-.76.177zm.064-.99c-.292 0-.46.18-.506.54.122.025.257.037.406.037.155 0 .267-.024.337-.071.07-.047.105-.12.105-.218 0-.193-.114-.289-.342-.289zm2.948 1.946a.21.21 0 0 1-.075-.011.119.119 0 0 1-.05-.037.274.274 0 0 1-.038-.071l-.777-2.04a1.863 1.863 0 0 1-.023-.063.162.162 0 0 1-.009-.05c0-.047.03-.07.091-.07h.454c.049 0 .084.01.107.028.023.018.04.049.052.092l.468 1.622.477-1.622a.175.175 0 0 1 .052-.092c.023-.018.058-.027.107-.027h.44c.061 0 .091.022.091.068a.16.16 0 0 1-.009.05l-.022.065-.777 2.039a.274.274 0 0 1-.039.07.122.122 0 0 1-.047.038.207.207 0 0 1-.078.01zm2.02-2.703a.393.393 0 0 1-.277-.097.338.338 0 0 1-.105-.26c0-.11.035-.198.105-.262a.393.393 0 0 1 .277-.096c.115 0 .207.032.277.096.07.064.104.151.104.261 0 .11-.034.197-.104.261a.393.393 0 0 1-.277.097zm-.218 2.703c-.04 0-.068-.01-.086-.028-.019-.018-.028-.047-.028-.087V9.507c0-.043.01-.072.028-.09.018-.016.047-.024.086-.024h.436c.042 0 .072.008.089.025.016.017.024.046.024.09v2.111c0 .04-.008.07-.024.087-.017.019-.047.028-.09.028zm1.948.05a.869.869 0 0 1-.513-.153.97.97 0 0 1-.334-.426 1.6 1.6 0 0 1-.116-.63c0-.38.09-.682.268-.91a.856.856 0 0 1 .709-.341.98.98 0 0 1 .622.206V8.458c0-.043.01-.073.027-.09.018-.016.047-.025.087-.025h.436c.042 0 .071.009.088.025.017.017.025.047.025.09v3.161c0 .04-.008.07-.025.087-.017.019-.046.028-.088.028h-.364a.135.135 0 0 1-.084-.023.137.137 0 0 1-.043-.078l-.027-.105a.958.958 0 0 1-.668.256zm.218-.504a.762.762 0 0 0 .418-.128v-1.21a.872.872 0 0 0-.45-.114c-.16 0-.28.06-.358.18-.08.121-.118.304-.118.548 0 .245.041.426.124.546.084.119.212.178.384.178zm2.588-.51c-.169 0-.315-.016-.44-.05.018.201.078.345.18.432.103.087.257.13.465.13.083 0 .164-.005.242-.016a2.997 2.997 0 0 0 .354-.076.135.135 0 0 1 .022-.002c.05 0 .075.035.075.103v.207c0 .048-.007.082-.02.101a.165.165 0 0 1-.077.052 1.895 1.895 0 0 1-.69.126c-.367 0-.65-.102-.846-.306-.197-.204-.296-.496-.296-.876 0-.39.1-.695.302-.917.202-.222.482-.333.84-.333.276 0 .492.068.647.203a.678.678 0 0 1 .234.539c0 .225-.084.395-.251.51-.168.115-.415.173-.74.173zm.063-.97c-.285 0-.45.176-.494.53.119.024.25.036.396.036.15 0 .26-.024.329-.07.068-.046.102-.117.102-.213 0-.19-.111-.284-.333-.284zm2.442 2.003c-.36 0-.642-.11-.845-.328-.203-.218-.304-.523-.304-.914 0-.388.101-.691.304-.91.203-.218.485-.327.845-.327s.642.109.845.327c.203.219.304.522.304.91 0 .39-.101.696-.304.914-.203.218-.485.328-.845.328zm0-.514c.318 0 .477-.242.477-.728 0-.483-.16-.724-.477-.724-.318 0-.477.241-.477.724 0 .486.16.728.477.728zm-6.844 1.886c.405-.306.944-.408 1.39-.408.418 0 .756.09.828.185.15.2-.039 1.584-.775 2.244-.112.102-.22.047-.17-.087.166-.442.536-1.436.36-1.677-.175-.242-1.158-.115-1.6-.058-.068.008-.107-.02-.112-.061v-.023c.004-.036.03-.078.079-.115zm-10.184-.172a.105.105 0 0 1 .106-.091c.027 0 .057.009.089.028a11.778 11.778 0 0 0 6.194 1.772c1.52 0 3.19-.34 4.726-1.043.232-.105.426.164.2.346-1.371 1.09-3.359 1.67-5.07 1.67-2.397 0-4.557-.956-6.191-2.547a.173.173 0 0 1-.054-.097Z"},"twitch":{"m":"twitch.tv","c":"#9146FF","p":"M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"},"tiktok":{"m":"tiktok.com","c":"#000000","p":"M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"},"facebook":{"m":"facebook.com","c":"#0866FF","p":"M9.101 23.691v-7.98H6.627v-3.667h2.474v-1.58c0-4.085 1.848-5.978 5.858-5.978.401 0 .955.042 1.468.103a8.68 8.68 0 0 1 1.141.195v3.325a8.623 8.623 0 0 0-.653-.036 26.805 26.805 0 0 0-.733-.009c-.707 0-1.259.096-1.675.309a1.686 1.686 0 0 0-.679.622c-.258.42-.374.995-.374 1.752v1.297h3.919l-.386 2.103-.287 1.564h-3.246v8.245C19.396 23.238 24 18.179 24 12.044c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.628 3.874 10.35 9.101 11.647Z"},"instagram":{"m":"instagram.com","c":"#FF0069","p":"M7.0301.084c-1.2768.0602-2.1487.264-2.911.5634-.7888.3075-1.4575.72-2.1228 1.3877-.6652.6677-1.075 1.3368-1.3802 2.127-.2954.7638-.4956 1.6365-.552 2.914-.0564 1.2775-.0689 1.6882-.0626 4.947.0062 3.2586.0206 3.6671.0825 4.9473.061 1.2765.264 2.1482.5635 2.9107.308.7889.72 1.4573 1.388 2.1228.6679.6655 1.3365 1.0743 2.1285 1.38.7632.295 1.6361.4961 2.9134.552 1.2773.056 1.6884.069 4.9462.0627 3.2578-.0062 3.668-.0207 4.9478-.0814 1.28-.0607 2.147-.2652 2.9098-.5633.7889-.3086 1.4578-.72 2.1228-1.3881.665-.6682 1.0745-1.3378 1.3795-2.1284.2957-.7632.4966-1.636.552-2.9124.056-1.2809.0692-1.6898.063-4.948-.0063-3.2583-.021-3.6668-.0817-4.9465-.0607-1.2797-.264-2.1487-.5633-2.9117-.3084-.7889-.72-1.4568-1.3876-2.1228C21.2982 1.33 20.628.9208 19.8378.6165 19.074.321 18.2017.1197 16.9244.0645 15.6471.0093 15.236-.005 11.977.0014 8.718.0076 8.31.0215 7.0301.0839m.1402 21.6932c-1.17-.0509-1.8053-.2453-2.2287-.408-.5606-.216-.96-.4771-1.3819-.895-.422-.4178-.6811-.8186-.9-1.378-.1644-.4234-.3624-1.058-.4171-2.228-.0595-1.2645-.072-1.6442-.079-4.848-.007-3.2037.0053-3.583.0607-4.848.05-1.169.2456-1.805.408-2.2282.216-.5613.4762-.96.895-1.3816.4188-.4217.8184-.6814 1.3783-.9003.423-.1651 1.0575-.3614 2.227-.4171 1.2655-.06 1.6447-.072 4.848-.079 3.2033-.007 3.5835.005 4.8495.0608 1.169.0508 1.8053.2445 2.228.408.5608.216.96.4754 1.3816.895.4217.4194.6816.8176.9005 1.3787.1653.4217.3617 1.056.4169 2.2263.0602 1.2655.0739 1.645.0796 4.848.0058 3.203-.0055 3.5834-.061 4.848-.051 1.17-.245 1.8055-.408 2.2294-.216.5604-.4763.96-.8954 1.3814-.419.4215-.8181.6811-1.3783.9-.4224.1649-1.0577.3617-2.2262.4174-1.2656.0595-1.6448.072-4.8493.079-3.2045.007-3.5825-.006-4.848-.0608M16.953 5.5864A1.44 1.44 0 1 0 18.39 4.144a1.44 1.44 0 0 0-1.437 1.4424M5.8385 12.012c.0067 3.4032 2.7706 6.1557 6.173 6.1493 3.4026-.0065 6.157-2.7701 6.1506-6.1733-.0065-3.4032-2.771-6.1565-6.174-6.1498-3.403.0067-6.156 2.771-6.1496 6.1738M8 12.0077a4 4 0 1 1 4.008 3.9921A3.9996 3.9996 0 0 1 8 12.0077"},"x":{"m":"x.com","c":"#000000","p":"M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"},"line":{"m":"line.me","c":"#00C300","p":"M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"},"google":{"m":"google.com","c":"#4285F4","p":"M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"},"tesla":{"m":"tesla.com","c":"#CC0000","p":"M12 5.362l2.475-3.026s4.245.09 8.471 2.054c-1.082 1.636-3.231 2.438-3.231 2.438-.146-1.439-1.154-1.79-4.354-1.79L12 24 8.619 5.034c-3.18 0-4.188.354-4.335 1.792 0 0-2.146-.795-3.229-2.43C5.28 2.431 9.525 2.34 9.525 2.34L12 5.362l-.004.002H12v-.002zm0-3.899c3.415-.03 7.326.528 11.328 2.28.535-.968.672-1.395.672-1.395C19.625.612 15.528.015 12 0 8.472.015 4.375.61 0 2.349c0 0 .195.525.672 1.396C4.674 1.989 8.585 1.435 12 1.46v.003z"}};
-  const BRAND_LIST = Object.values(BRANDS).sort((a, b) => b.m.length - a.m.length);
-  const hostOf = u => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch (e) { return ''; } };
-  function brandFor(u) {
-    let x; try { x = new URL(u); } catch (e) { return null; }
-    const host = x.hostname.replace(/^www\./, ''), full = host + x.pathname;
-    return BRAND_LIST.find(b => b.m.includes('/') ? full.startsWith(b.m) : (host === b.m || host.endsWith('.' + b.m))) || null;
-  }
-  const isDark = hex => { const n = parseInt(hex.slice(1), 16); return ((n >> 16) * .299 + ((n >> 8) & 255) * .587 + (n & 255) * .114) < 50; };
   const DEFAULT_APPS = [
     { n: 'YouTube', u: 'https://www.youtube.com' }, { n: 'YouTube Music', u: 'https://music.youtube.com' },
-    { n: 'Spotify', u: 'https://open.spotify.com' }, { n: 'Google Maps', u: 'https://www.google.com/maps' },
-    { n: 'Waze', u: 'https://www.waze.com/live-map' }, { n: 'Netflix', u: 'https://www.netflix.com' },
+    { n: 'Spotify', u: 'https://open.spotify.com' }, { n: 'Netflix', u: 'https://www.netflix.com' },
     { n: 'Prime Video', u: 'https://www.primevideo.com' }, { n: 'Disney+ Hotstar', u: 'https://www.hotstar.com/th' },
+    { n: 'Google Maps', u: 'https://www.google.com/maps' }, { n: 'Waze', u: 'https://www.waze.com/live-map' },
     { n: 'Apple Music', u: 'https://music.apple.com' }, { n: 'JOOX', u: 'https://www.joox.com/th' },
     { n: 'SoundCloud', u: 'https://soundcloud.com' }, { n: 'Twitch', u: 'https://www.twitch.tv' },
     { n: 'TikTok', u: 'https://www.tiktok.com' }, { n: 'Facebook', u: 'https://www.facebook.com' },
     { n: 'Instagram', u: 'https://www.instagram.com' }, { n: 'X', u: 'https://x.com' },
     { n: 'Google', u: 'https://www.google.com' }, { n: 'Tesla', u: 'https://www.tesla.com/th_th' }
   ];
-  const TILE_COLORS = ['#8ab4f8', '#7fd39b', '#f2c26b', '#f28b9b', '#c3a6f5', '#6fd3c4', '#f5a26b', '#a8c7fa'];
-  const OLD_DEFAULT_URLS = ['https://www.youtube.com', 'https://music.youtube.com', 'https://open.spotify.com', 'https://www.google.com/maps', 'https://www.waze.com/live-map', 'https://www.netflix.com', 'https://www.joox.com/th', 'https://www.google.com'];
-  let apps = store.get('apps2', null);
-  if (!apps) { // keep shortcuts the driver added in the first version
-    const extra = (store.get('apps', []) || []).filter(a => !OLD_DEFAULT_URLS.includes(a.u));
-    apps = [...DEFAULT_APPS, ...extra];
-  }
+  let apps = store.get('apps2', null) || DEFAULT_APPS.slice();
   let editing = false;
-  const mono = n => n.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase();
-  const colorFor = n => TILE_COLORS[[...n].reduce((a, c) => a + c.charCodeAt(0), 0) % TILE_COLORS.length];
-  function iconHTML(a) {
-    const b = brandFor(a.u);
-    if (b) return `<span class="app-ico${isDark(b.c) ? ' dark' : ''}" style="background:${b.c}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${b.p}"/></svg></span>`;
-    const host = hostOf(a.u);
-    return `<span class="app-ico fav" data-mono="${esc(mono(a.n))}" data-color="${colorFor(a.n)}"><img class="favimg" alt="" src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=128"></span>`;
-  }
-  // Favicon failed to load (offline, or blocked): fall back to a coloured monogram.
-  document.addEventListener('error', e => {
-    const img = e.target; if (!(img instanceof HTMLImageElement) || !img.classList.contains('favimg')) return;
-    const ico = img.parentNode; ico.classList.remove('fav'); ico.style.background = ico.dataset.color; ico.textContent = ico.dataset.mono;
-  }, true);
   const tile = (a, i) => `<a class="app" href="${esc(a.u)}" target="_blank" rel="noopener" data-i="${i}">
-      ${iconHTML(a)}
-      <span class="app-name">${esc(a.n)}</span>
+      ${mark(a, 'app-ico').html}<span class="app-name">${esc(a.n)}</span>
       <span class="app-del" role="button" data-del="${i}" aria-label="ลบ ${esc(a.n)}"><svg><use href="#i-close"/></svg></span></a>`;
   function renderApps() {
     $('#appGrid').innerHTML = apps.map(tile).join('');
-    $('#homeApps').innerHTML = apps.slice(0, 3).map(tile).join('') +
-      `<button class="app" data-go="apps"><span class="app-ico" style="background:var(--surface-2);color:var(--fg)"><svg class="i" style="fill:var(--fg)"><use href="#i-apps"/></svg></span><span class="app-name">ทั้งหมด</span></button>`;
-    $('#services').innerHTML = apps.map((a, i) => [a, i]).filter(([a]) => /music|spotify|joox|soundcloud|youtube/i.test(a.u)).map(([a, i]) => tile(a, i)).join('');
+    $('#homeApps').innerHTML = apps.map(tile).join('');
   }
   $('#appGrid').addEventListener('click', e => {
     const del = e.target.closest('[data-del]');
     if (editing) e.preventDefault();
     if (del && editing) { const i = +del.dataset.del; const name = apps[i].n; apps.splice(i, 1); store.set('apps2', apps); renderApps(); toast('ลบ ' + name + ' แล้ว'); }
   });
-  $('#editApps').onclick = () => {
-    editing = !editing; $('#appGrid').classList.toggle('editing', editing);
-    $('#editApps span').textContent = editing ? 'เสร็จ' : 'จัดการ';
-  };
+  $('#editApps').onclick = () => { editing = !editing; $('#appGrid').classList.toggle('editing', editing); $('#editApps span').textContent = editing ? 'เสร็จ' : 'จัดการ'; };
   $('#resetApps').onclick = () => { apps = DEFAULT_APPS.slice(); store.set('apps2', apps); renderApps(); toast('รีเซ็ตทางลัดแล้ว'); };
-
   $('#addApp').onclick = () => {
     const wrap = document.createElement('div');
     wrap.className = 'sheet-backdrop';
     wrap.innerHTML = `<form class="sheet" autocomplete="off">
         <h2>เพิ่มทางลัด</h2>
-        <input class="field" id="newName" placeholder="ชื่อ เช่น Disney+" required>
-        <input class="field" id="newUrl" placeholder="ลิงก์ เช่น disneyplus.com" inputmode="url" required>
+        <input class="field" id="newName" placeholder="ชื่อ เช่น Viu" required>
+        <input class="field" id="newUrl" placeholder="ลิงก์ เช่น viu.com" inputmode="url" required>
         <div class="err" id="newErr"></div>
-        <div class="sheet-actions"><button type="button" class="pill" data-x>ยกเลิก</button><button class="pill primary">เพิ่ม</button></div>
+        <div class="sheet-actions"><button type="button" class="btn" data-x>ยกเลิก</button><button class="btn primary">เพิ่ม</button></div>
       </form>`;
     document.body.append(wrap);
     const close = () => wrap.remove();
@@ -1698,84 +2112,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
     setTimeout(() => $('#newName', wrap).focus(), 30);
   };
 
-  /* ---------- Media ---------- */
-  const audio = $('#audio');
-  let queue = [], idx = -1;
-  const fmt = s => isFinite(s) ? Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0') : '0:00';
-  function renderMedia() {
-    const t = queue[idx];
-    $$('.art').forEach(e => { const a = t && t.art; e.classList.toggle('has-img', !!a); e.style.backgroundImage = a ? 'url("' + a + '")' : ''; });
-    $$('[data-bind="title"]').forEach(e => e.textContent = t ? t.name : 'ยังไม่มีเพลง');
-    $$('[data-bind="sub"]').forEach(e => e.textContent = t ? (t.artist ? t.artist + ' · ' : '') + `เพลงที่ ${idx + 1} จาก ${queue.length}` : 'แตะเพื่อเพิ่มไฟล์เพลง');
-    $$('[data-bind="playicon"]').forEach(e => e.setAttribute('href', audio.paused ? '#i-play' : '#i-pause'));
-    $('#playlist').innerHTML = queue.length
-      ? queue.map((q, i) => `<button class="list-item${i === idx ? ' active' : ''}" data-track="${i}"><svg><use href="#i-music"/></svg><span class="grow">${esc(q.name)}</span></button>`).join('')
-      : '<p class="hint">เลือกไฟล์เพลงจาก USB หรือเครื่องที่เปิดหน้านี้ แล้วเล่นได้ทันที</p>';
-  }
-  function load(i, play = true) {
-    if (!queue.length) return;
-    idx = (i + queue.length) % queue.length;
-    audio.src = queue[idx].url;
-    if (play) audio.play().catch(() => {});
-    renderMedia();
-  }
-  $('#fileIn').addEventListener('change', e => {
-    const files = [...e.target.files];
-    if (!files.length) return;
-    const start = queue.length;
-    files.forEach(f => {
-      const item = { name: f.name.replace(/\.[^.]+$/, ''), url: URL.createObjectURL(f) };
-      queue.push(item);
-      // Read title, artist and cover art embedded in the file, when the tag reader is available.
-      if (window.jsmediatags) jsmediatags.read(f, { onSuccess: ({ tags }) => {
-        if (tags.title) item.name = tags.title;
-        if (tags.artist) item.artist = tags.artist;
-        if (tags.picture) item.art = URL.createObjectURL(new Blob([new Uint8Array(tags.picture.data)], { type: tags.picture.format }));
-        renderMedia();
-      }, onError: () => {} });
-    });
-    toast(`เพิ่ม ${files.length} เพลงแล้ว`);
-    if (idx < 0) load(start); else renderMedia();
-    e.target.value = '';
-  });
-  document.addEventListener('click', e => {
-    const b = e.target.closest('[data-act]');
-    if (b) {
-      if (!queue.length) { go('media'); toast('เพิ่มไฟล์เพลงก่อน'); return; }
-      if (b.dataset.act === 'toggle') audio.paused ? audio.play().catch(() => {}) : audio.pause();
-      if (b.dataset.act === 'next') load(idx + 1);
-      if (b.dataset.act === 'prev') audio.currentTime > 3 ? (audio.currentTime = 0) : load(idx - 1);
-      return;
-    }
-    const tr = e.target.closest('[data-track]'); if (tr) load(+tr.dataset.track);
-    if (e.target.closest('.media-card .media-top')) go('media');
-  });
-  $('#seekBar').addEventListener('click', e => {
-    if (!audio.duration) return;
-    const r = e.currentTarget.getBoundingClientRect();
-    audio.currentTime = ((e.clientX - r.left) / r.width) * audio.duration;
-  });
-  audio.addEventListener('timeupdate', () => {
-    const p = audio.duration ? (audio.currentTime / audio.duration) * 100 : 0;
-    $$('[data-bind="bar"]').forEach(e => e.style.width = p + '%');
-    $$('[data-bind="cur"]').forEach(e => e.textContent = fmt(audio.currentTime));
-    $$('[data-bind="dur"]').forEach(e => e.textContent = fmt(audio.duration));
-  });
-  ['play', 'pause'].forEach(ev => audio.addEventListener(ev, renderMedia));
-  audio.addEventListener('ended', () => load(idx + 1));
-  if ('mediaSession' in navigator) {
-    try {
-      navigator.mediaSession.setActionHandler('nexttrack', () => load(idx + 1));
-      navigator.mediaSession.setActionHandler('previoustrack', () => load(idx - 1));
-    } catch (e) {}
-  }
-
   /* ---------- Boot ---------- */
   applySettings();
-  renderApps(); renderRecent(); renderMedia();
-  initMap();
+  renderCatalogue(); renderApps(); renderRecent(); renderMedia(); showHero(0);
   const startView = store.get('view', 'home');
-  go(['home', 'nav', 'media', 'apps'].includes(startView) ? startView : 'home');
+  go(['home', 'movies', 'music', 'games', 'apps', 'map'].includes(startView) ? startView : 'home');
   try { navigator.wakeLock && navigator.wakeLock.request('screen').catch(() => {}); } catch (e) {}
 })();
 </script>
