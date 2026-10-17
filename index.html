@@ -215,6 +215,10 @@ main { min-height: 0; position: relative; }
 .planet { position: absolute; left: 50%; top: 12%; width: 520%; aspect-ratio: 1; transform: translateX(-50%); border-radius: 50%;
   background: radial-gradient(closest-side, #06051a 96%, #1d1460 98.6%, #8f7cff 99.6%, #efeaff 100%);
   box-shadow: 0 -4px 22px 2px rgb(205 190 255 / .7), 0 -40px 140px 30px rgb(116 86 255 / .45); }
+.hero-sky { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.hero.sky-on { background: radial-gradient(120% 90% at 40% -10%, #1c1450 0%, #0c0828 45%, #05040f 80%); }
+.hero.sky-on .planet { display: none; }
+.hero.sky-on .hero-poster { opacity: .1; }
 .hero-poster { position: absolute; inset: 0; background-size: cover; background-position: center 30%; opacity: .16; mix-blend-mode: screen; transition: background-image .4s; }
 .hero-side { position: absolute; top: 1.5rem; right: 1.75rem; text-align: right; font-family: var(--font-mono); font-size: .72rem; letter-spacing: .14em; color: var(--muted); text-transform: uppercase; line-height: 1.6; }
 .hero-copy { position: relative; padding: 2rem 2.25rem 2.25rem; max-width: 46rem; text-shadow: 0 2px 18px rgb(5 4 14 / .8); }
@@ -530,6 +534,7 @@ main { min-height: 0; position: relative; }
       <div class="hero" id="hero">
         <div class="hero-poster" id="heroPoster"></div>
         <div class="planet" aria-hidden="true"></div>
+        <canvas class="hero-sky" id="heroSky" aria-hidden="true"></canvas>
         <div class="hero-side">Entertainment<br>in orbit</div>
         <div class="hero-copy">
           <div class="eyebrow" id="heroEyebrow">ภาพยนตร์แนะนำ · ดูฟรีในแอป</div>
@@ -831,6 +836,148 @@ main { min-height: 0; position: relative; }
     if (b && !e.target.closest('[data-act]')) go(b.dataset.go);
   });
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  /* ---------- Hero planet ---------- */
+  // A cinematic planet limb for the home banner: a star rising behind the planet lights a thin atmosphere,
+  // with anamorphic flare, slow orbital drift, parallax stars and dust. Heavy layers are rendered once per
+  // resize; each frame only composites them, at most ~30 fps and only while the home page is on screen.
+  const sky = $('#heroSky'), sx = sky && sky.getContext('2d');
+  let skyW = 0, skyH = 0, skyDpr = 1, skyLayers = null, skyStars = [], skyDust = [], skyLast = 0;
+  function noiseTex(n) {
+    // Fractal value noise, stretched sideways so it reads as cloud bands on a turning planet.
+    const c = document.createElement('canvas'); c.width = c.height = n;
+    const g = c.getContext('2d'), img = g.createImageData(n, n), d = img.data;
+    const oct = [8, 16, 32, 64].map(s => ({ s, v: Float32Array.from({ length: (s + 1) * (s + 1) }, Math.random) }));
+    const sm = t => t * t * (3 - 2 * t);
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+      let v = 0, amp = .55;
+      for (const o of oct) {
+        const fx = x / n * o.s, fy = y / n * o.s * .35, ix = fx | 0, iy = fy | 0, tx = sm(fx - ix), ty = sm(fy - iy), w = o.s + 1;
+        const a = o.v[iy * w + ix], b = o.v[iy * w + ix + 1], c2 = o.v[(iy + 1) * w + ix], e = o.v[(iy + 1) * w + ix + 1];
+        v += amp * (a + (b - a) * tx + (c2 - a + (a - b - c2 + e) * tx) * ty); amp *= .5;
+      }
+      const k = (y * n + x) * 4, l = Math.max(0, v - .35) * 380;
+      d[k] = l * .78; d[k + 1] = l * .72; d[k + 2] = l; d[k + 3] = 255;
+    }
+    g.putImageData(img, 0, 0); return c;
+  }
+  let skyNoise = null;
+  function planetGeom() {
+    const R = skyW * 2;
+    return { R, cx: skyW * .36, cy: skyH * .1 + R, la: -1.53 }; // la: angle of the light on the limb, a little right of the crest
+  }
+  function buildSky() {
+    const W = skyW, H = skyH, { R, cx, cy, la } = planetGeom(), lx = cx + R * Math.cos(la), ly = cy + R * Math.sin(la);
+    const mk = () => { const c = document.createElement('canvas'); c.width = W * skyDpr; c.height = H * skyDpr; const g = c.getContext('2d'); g.scale(skyDpr, skyDpr); return [c, g]; };
+    skyNoise = skyNoise || noiseTex(256);
+
+    // Nebula: soft violet and blue clouds behind everything.
+    const [neb, ng] = mk();
+    [[.22, .2, .55, '120,80,255', .22], [.78, .05, .45, '70,110,255', .14], [.5, .45, .7, '160,90,255', .1], [.1, .7, .35, '90,60,200', .12]]
+      .forEach(([x, y, r, c, a]) => { const gr = ng.createRadialGradient(W * x, H * y, 0, W * x, H * y, W * r); gr.addColorStop(0, `rgba(${c},${a})`); gr.addColorStop(1, `rgba(${c},0)`); ng.fillStyle = gr; ng.fillRect(0, 0, W, H); });
+
+    // Planet: night side, then the sunlit crescent with cloud texture, then the atmosphere, all fading away from the light.
+    const [pl, pg] = mk();
+    pg.save(); pg.beginPath(); pg.arc(cx, cy, R, 0, 6.2832); pg.clip();
+    pg.fillStyle = '#04030f'; pg.fillRect(0, 0, W, H);
+    const [lit, lg] = mk();
+    lg.save(); lg.beginPath(); lg.arc(cx, cy, R, 0, 6.2832); lg.clip();
+    lg.globalAlpha = .55; lg.drawImage(skyNoise, 0, cy - R, W, H * .9);
+    lg.globalAlpha = 1; lg.globalCompositeOperation = 'source-over';
+    let g = lg.createRadialGradient(cx, cy, R * .9, cx, cy, R);
+    g.addColorStop(0, 'rgba(60,40,170,0)'); g.addColorStop(.75, 'rgba(98,70,230,.35)'); g.addColorStop(.97, 'rgba(190,170,255,.8)'); g.addColorStop(1, 'rgba(240,235,255,1)');
+    lg.fillStyle = g; lg.fillRect(0, 0, W, H);
+    lg.restore();
+    lg.globalCompositeOperation = 'destination-in';
+    g = lg.createRadialGradient(lx, ly, 0, lx, ly, W * .75);
+    g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(.35, 'rgba(0,0,0,.75)'); g.addColorStop(1, 'rgba(0,0,0,.04)');
+    lg.fillStyle = g; lg.fillRect(0, 0, W, H);
+    pg.drawImage(lit, 0, 0, W, H); pg.restore();
+
+    // Atmosphere: a thin bright rim and a wide scattered haze outside the limb.
+    const [atm, ag] = mk();
+    g = ag.createRadialGradient(cx, cy, R * .995, cx, cy, R * 1.075);
+    g.addColorStop(0, 'rgba(250,246,255,.95)'); g.addColorStop(.035, 'rgba(205,190,255,.75)'); g.addColorStop(.16, 'rgba(140,110,255,.38)');
+    g.addColorStop(.45, 'rgba(100,70,240,.12)'); g.addColorStop(1, 'rgba(80,50,220,0)');
+    ag.fillStyle = g; ag.beginPath(); ag.arc(cx, cy, R * 1.08, 0, 6.2832); ag.arc(cx, cy, R * .995, 0, 6.2832, true); ag.fill();
+    ag.globalCompositeOperation = 'destination-in';
+    g = ag.createRadialGradient(lx, ly, 0, lx, ly, W * .85);
+    g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(.4, 'rgba(0,0,0,.7)'); g.addColorStop(1, 'rgba(0,0,0,.08)');
+    ag.fillStyle = g; ag.fillRect(0, 0, W, H);
+
+    skyLayers = { neb, pl, atm, lx, ly };
+    const n = Math.round(W * H / 2600);
+    skyStars = Array.from({ length: n }, () => ({ x: Math.random() * W, y: Math.random() * H, r: Math.random() ** 4 * 1.5 + .3, a: Math.random() * .8 + .2, p: Math.random() * 6.28, s: Math.random() * .9 + .3, z: Math.random() * .6 + .2 }));
+    skyDust = Array.from({ length: 26 }, () => ({ x: Math.random() * W, y: Math.random() * H, r: Math.random() * 1.8 + .6, v: Math.random() * .012 + .004, a: Math.random() * .25 + .05 }));
+  }
+  function sizeSky() {
+    if (!sky) return;
+    const r = sky.getBoundingClientRect();
+    if (!r.width || !r.height) return;
+    skyDpr = Math.min(1.5, window.devicePixelRatio || 1);
+    skyW = r.width; skyH = r.height;
+    sky.width = skyW * skyDpr; sky.height = skyH * skyDpr;
+    buildSky(); drawSky(performance.now());
+  }
+  function drawSky(t) {
+    if (!skyLayers) return;
+    const W = skyW, H = skyH, L = skyLayers, s = t / 1000;
+    sx.setTransform(skyDpr, 0, 0, skyDpr, 0, 0);
+    sx.clearRect(0, 0, W, H);
+    // Slow orbital drift: the camera sways like a ship in orbit, the planet and stars move at different depths.
+    const dx = Math.sin(s * .05) * W * .012, dy = Math.sin(s * .037 + 1) * H * .018, rot = Math.sin(s * .03) * .006;
+    sx.drawImage(L.neb, -dx * .4 - W * .02, -dy * .4, W * 1.04, H);
+    for (const st of skyStars) {
+      const tw = .6 + .4 * Math.sin(s * st.s * 1.3 + st.p);
+      let x = (st.x - dx * st.z) % W; if (x < 0) x += W;
+      sx.globalAlpha = st.a * tw; sx.fillStyle = st.r > 1.2 ? '#e4dcff' : '#fff';
+      sx.beginPath(); sx.arc(x, st.y - dy * st.z, st.r, 0, 6.2832); sx.fill();
+    }
+    sx.globalAlpha = 1;
+    sx.save();
+    sx.translate(W / 2 + dx, H / 2 + dy); sx.rotate(rot); sx.translate(-W / 2, -H / 2);
+    sx.drawImage(L.pl, 0, 0, W, H);
+    // The atmosphere breathes: its brightness swells slowly as the star climbs.
+    const breathe = .82 + .18 * Math.sin(s * .45);
+    sx.globalCompositeOperation = 'lighter';
+    sx.globalAlpha = breathe; sx.drawImage(L.atm, 0, 0, W, H);
+    // The star peeking over the limb, with a wide bloom and an anamorphic streak.
+    const fx = L.lx, fy = L.ly - 2, pulse = .85 + .15 * Math.sin(s * 1.1) * Math.sin(s * .27);
+    let g = sx.createRadialGradient(fx, fy, 0, fx, fy, W * .28);
+    g.addColorStop(0, `rgba(255,255,255,${.95 * pulse})`); g.addColorStop(.03, `rgba(225,215,255,${.7 * pulse})`);
+    g.addColorStop(.18, `rgba(150,120,255,${.22 * pulse})`); g.addColorStop(1, 'rgba(110,80,255,0)');
+    sx.globalAlpha = 1; sx.fillStyle = g; sx.fillRect(fx - W * .28, fy - W * .28, W * .56, W * .56);
+    sx.save(); sx.translate(fx, fy); sx.scale(1, .012);
+    g = sx.createRadialGradient(0, 0, 0, 0, 0, W * .7);
+    g.addColorStop(0, `rgba(200,210,255,${.85 * pulse})`); g.addColorStop(.3, `rgba(140,150,255,${.3 * pulse})`); g.addColorStop(1, 'rgba(120,120,255,0)');
+    sx.fillStyle = g; sx.beginPath(); sx.arc(0, 0, W * .7, 0, 6.2832); sx.fill(); sx.restore();
+    sx.restore();
+    // Lens ghosts along the line from the star through the frame centre.
+    const gx = W / 2 - (fx + dx - W / 2), gy = H / 2 - (fy + dy - H / 2);
+    [[.35, 26, .07], [.7, 12, .1], [1.25, 44, .05]].forEach(([k, r, a]) => {
+      const x = fx + dx + (gx - fx - dx) * k, y = fy + dy + (gy - fy - dy) * k;
+      g = sx.createRadialGradient(x, y, 0, x, y, r);
+      g.addColorStop(0, `rgba(170,150,255,${a * pulse})`); g.addColorStop(.7, `rgba(140,120,255,${a * .6 * pulse})`); g.addColorStop(1, 'rgba(140,120,255,0)');
+      sx.fillStyle = g; sx.beginPath(); sx.arc(x, y, r, 0, 6.2832); sx.fill();
+    });
+    // Drifting dust catching the light.
+    for (const d of skyDust) {
+      const x = (d.x + s * d.v * W) % W, y = d.y + Math.sin(s * .3 + d.x) * 6;
+      sx.globalAlpha = d.a * (.6 + .4 * Math.sin(s + d.y)); sx.fillStyle = '#d8ccff';
+      sx.beginPath(); sx.arc(x, y, d.r, 0, 6.2832); sx.fill();
+    }
+    sx.globalAlpha = 1; sx.globalCompositeOperation = 'source-over';
+  }
+  function skyLoop(t) {
+    const live = settings.stars && !reduceMotion && !document.hidden && current === 'home' && $('#overlay').hidden;
+    if (live && t - skyLast > 33) { skyLast = t; if (!skyW) sizeSky(); drawSky(t); }
+    requestAnimationFrame(skyLoop);
+  }
+  if (sx) {
+    $('#hero').classList.add('sky-on');
+    if (window.ResizeObserver) new ResizeObserver(sizeSky).observe(sky); else addEventListener('resize', sizeSky);
+    requestAnimationFrame(() => { sizeSky(); requestAnimationFrame(skyLoop); });
+  }
 
   /* ---------- Catalogue ---------- */
   // Full-length public-domain and Creative Commons films from the Internet Archive (archive.org), played directly.
