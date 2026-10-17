@@ -182,10 +182,7 @@ svg.i { width: 1.6rem; height: 1.6rem; fill: currentColor; flex: none; }
 .tab svg { width: 1.2rem; height: 1.2rem; fill: currentColor; }
 .tab:hover { color: var(--fg); border-color: var(--line-strong); }
 .tab[aria-current="page"] { background: var(--violet); border-color: var(--violet); color: #fff; box-shadow: 0 0 24px var(--glow); }
-.status { display: flex; align-items: center; gap: 1rem; flex: none; }
-.clock { font-family: var(--font-display); font-weight: 300; font-size: 1.5rem; font-variant-numeric: tabular-nums; }
-.wx { font-family: var(--font-mono); font-size: .8rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; text-align: right; line-height: 1.3; }
-.wx b { display: block; color: var(--fg); font-family: var(--font-display); font-weight: 400; font-size: 1.05rem; letter-spacing: 0; }
+.logo, .topbar-end { flex: 0 0 11.5rem; }
 .icon-btn { width: 3.1rem; height: 3.1rem; border-radius: 50%; display: grid; place-items: center; border: 1px solid var(--line); background: rgb(20 16 48 / .5); color: var(--muted); }
 .icon-btn:hover, .icon-btn[aria-current="page"] { color: var(--fg); border-color: var(--line-strong); }
 
@@ -467,12 +464,12 @@ main { min-height: 0; position: relative; }
 @media (max-width: 900px) {
   .music-layout { grid-template-columns: minmax(0, 1fr); }
   .player { position: static; }
-  .wx { display: none; }
 }
 @media (max-width: 640px) {
   .topbar { flex-wrap: wrap; gap: .6rem; }
   .tabs { order: 3; flex-basis: 100%; justify-content: flex-start; }
   .logo { flex: 1; }
+  .topbar-end { display: none; }
   .hero-copy { padding: 1.25rem; }
   .hero-side { display: none; }
   .film { width: 17rem; }
@@ -533,10 +530,7 @@ main { min-height: 0; position: relative; }
       <button class="tab" data-go="games"><svg><use href="#i-game"/></svg>เกม</button>
       <button class="tab" data-go="settings"><svg><use href="#i-gear"/></svg>การตั้งค่า</button>
     </nav>
-    <div class="status">
-      <div class="wx"><b id="wTemp">--°</b><span id="wDesc">อากาศ</span></div>
-      <div class="clock" id="clock">--:--</div>
-    </div>
+    <div class="topbar-end" aria-hidden="true"></div>
   </header>
 
   <main>
@@ -715,7 +709,6 @@ main { min-height: 0; position: relative; }
     <section class="view" data-view="settings" hidden>
       <div class="page-head"><div><div class="eyebrow">Tesaro</div><h1 class="page-title">ตั้งค่า</h1></div></div>
       <div class="settings">
-        <div class="panel srow"><div><b>นาฬิกา 24 ชั่วโมง</b><span>ปิดเพื่อแสดงแบบ 12 ชั่วโมง</span></div><button class="switch" role="switch" id="sw24" aria-label="นาฬิกา 24 ชั่วโมง"></button></div>
         <div class="panel srow"><div><b>ตัวอักษรใหญ่</b><span>ขยายปุ่มและข้อความ</span></div><button class="switch" role="switch" id="swBig" aria-label="ตัวอักษรใหญ่"></button></div>
         <div class="panel srow"><div><b>ดาวเคลื่อนไหว</b><span>ปิดเพื่อประหยัดแรงเครื่อง</span></div><button class="switch" role="switch" id="swStars" aria-label="ดาวเคลื่อนไหว"></button></div>
         <div class="panel srow"><div><b>เต็มจอ</b><span>ซ่อนแถบเบราว์เซอร์ ถ้าเบราว์เซอร์อนุญาต</span></div><button class="btn" id="fullBtn"><svg><use href="#i-full"/></svg>เปิดเต็มจอ</button></div>
@@ -762,9 +755,9 @@ main { min-height: 0; position: relative; }
   const toast = msg => { toastEl.textContent = msg; toastEl.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => toastEl.classList.remove('show'), 2400); };
   const hashOf = s => [...s].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7);
   const SPACE_GRADS = [
-    'linear-gradient(155deg,#5b48ff,#1a1150)', 'linear-gradient(155deg,#9b4dff,#250c4a)', 'linear-gradient(155deg,#3a6bff,#0c1a4d)',
-    'linear-gradient(155deg,#ff5fa8,#3a0d4d)', 'linear-gradient(155deg,#26c6da,#0c2350)', 'linear-gradient(155deg,#7d6bff,#2a0f5c)',
-    'linear-gradient(155deg,#ff8a5c,#3b0f3f)', 'linear-gradient(155deg,#4ade80,#0d2f3a)'
+    'linear-gradient(160deg,#2a2263,#0c0a22 78%)', 'linear-gradient(160deg,#36205a,#0e0a20 78%)', 'linear-gradient(160deg,#1c2a5c,#090c20 78%)',
+    'linear-gradient(160deg,#3a1d48,#0f0918 78%)', 'linear-gradient(160deg,#1a3250,#08111e 78%)', 'linear-gradient(160deg,#2d2560,#0b0a1f 78%)',
+    'linear-gradient(160deg,#3a2240,#110a17 78%)', 'linear-gradient(160deg,#1d3440,#081217 78%)'
   ];
   const gradFor = s => SPACE_GRADS[hashOf(s) % SPACE_GRADS.length];
 
@@ -772,15 +765,12 @@ main { min-height: 0; position: relative; }
   const settings = Object.assign({ h24: true, big: false, stars: true, ytKey: '', sb: true, adfree: true, speed: 1 }, store.get('settings', {}));
   function applySettings() {
     document.documentElement.classList.toggle('big', settings.big);
-    $('#sw24').setAttribute('aria-checked', settings.h24);
     $('#swBig').setAttribute('aria-checked', settings.big);
     $('#swStars').setAttribute('aria-checked', settings.stars);
     $('#swSb').setAttribute('aria-checked', settings.sb);
     $('#swAdfree').setAttribute('aria-checked', settings.adfree);
     store.set('settings', settings);
-    tick();
   }
-  $('#sw24').onclick = () => { settings.h24 = !settings.h24; applySettings(); };
   $('#swBig').onclick = () => { settings.big = !settings.big; applySettings(); };
   $('#ytKey').value = settings.ytKey;
   $('#ytKey').addEventListener('change', e => { settings.ytKey = e.target.value.trim(); applySettings(); tubeCache.clear(); toast(settings.ytKey ? 'บันทึกคีย์แล้ว' : 'ลบคีย์แล้ว'); });
@@ -792,13 +782,6 @@ main { min-height: 0; position: relative; }
     const p = document.documentElement.requestFullscreen ? document.documentElement.requestFullscreen() : null;
     if (!p) toast('เบราว์เซอร์นี้ไม่รองรับโหมดเต็มจอ'); else p.catch(() => toast('เบราว์เซอร์นี้ไม่อนุญาตโหมดเต็มจอ'));
   };
-
-  /* ---------- Clock ---------- */
-  function tick() {
-    const d = new Date();
-    $('#clock').textContent = d.toLocaleTimeString(settings.h24 ? 'en-GB' : 'en-US', { hour: settings.h24 ? '2-digit' : 'numeric', minute: '2-digit', hour12: !settings.h24 });
-  }
-  setInterval(tick, 1000);
 
   /* ---------- Starfield ---------- */
   const cv = $('#stars'), cx = cv.getContext('2d');
@@ -867,103 +850,115 @@ float h31(vec3 p){p=fract(p*.3183099+vec3(.1,.2,.3));p*=17.;return fract(p.x*p.y
 float n3(vec3 x){vec3 i=floor(x),f=fract(x);f=f*f*(3.-2.*f);
  return mix(mix(mix(h31(i),h31(i+vec3(1,0,0)),f.x),mix(h31(i+vec3(0,1,0)),h31(i+vec3(1,1,0)),f.x),f.y),
             mix(mix(h31(i+vec3(0,0,1)),h31(i+vec3(1,0,1)),f.x),mix(h31(i+vec3(0,1,1)),h31(i+vec3(1,1,1)),f.x),f.y),f.z);}
-float fbm3(vec3 p){float v=0.,a=.5;for(int i=0;i<5;i++){v+=a*n3(p);p=p*2.02+vec3(1.7,9.2,3.1);a*=.5;}return v;}
+float fbm(vec3 p){float v=0.,a=.5;for(int i=0;i<6;i++){v+=a*n3(p);p=p*2.03+vec3(1.7,9.2,3.1);a*=.5;}return v;}
+float fbm4(vec3 p){float v=0.,a=.5;for(int i=0;i<4;i++){v+=a*n3(p);p=p*2.03+vec3(1.7,9.2,3.1);a*=.5;}return v;}
 float h21(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}
 float n2(vec2 x){vec2 i=floor(x),f=fract(x);f=f*f*(3.-2.*f);return mix(mix(h21(i),h21(i+vec2(1,0)),f.x),mix(h21(i+vec2(0,1)),h21(i+vec2(1,1)),f.x),f.y);}
 float fbm2(vec2 p){float v=0.,a=.5;for(int i=0;i<5;i++){v+=a*n2(p);p=p*2.03+vec2(5.2,1.3);a*=.5;}return v;}
-vec3 rotY(vec3 v,float a){float c=cos(a),s=sin(a);return vec3(c*v.x+s*v.z,v.y,-s*v.x+c*v.z);}
 vec3 rotX(vec3 v,float a){float c=cos(a),s=sin(a);return vec3(v.x,c*v.y-s*v.z,s*v.y+c*v.z);}
-vec3 ramp(float t){
- vec3 c0=vec3(.16,.08,.42),c1=vec3(.45,.27,.98),c2=vec3(.8,.42,1.),c3=vec3(1.,.55,.78),c4=vec3(1.,.82,.7);
- float s=clamp(t,0.,1.)*4.;
- return s<1.?mix(c0,c1,s):s<2.?mix(c1,c2,s-1.):s<3.?mix(c2,c3,s-2.):mix(c3,c4,s-3.);
-}
+vec2 sph(vec3 ro,vec3 rd,float r){float b=dot(ro,rd),c=dot(ro,ro)-r*r,h=b*b-c;if(h<0.)return vec2(-1.);h=sqrt(h);return vec2(-b-h,-b+h);}
+vec3 aces(vec3 x){return clamp((x*(2.51*x+.03))/(x*(2.43*x+.59)+.14),0.,1.);}
+const float RA=1.035, HS=.0075;
 void main(){
- vec2 p=vec2(gl_FragCoord.x,uRes.y-gl_FragCoord.y);
- float W=uRes.x,H=uRes.y;
- vec2 dr=vec2(sin(uT*.05)*.012*W,sin(uT*.037+1.)*.02*H);
- vec3 L=normalize(vec3(.5,.55,.68));
- // Deep space with nebulae.
- vec2 q=(p-dr*.3)/H;
- float a1=fbm2(q*1.5+vec2(uT*.006,0.));
- float a2=fbm2(q*3.+a1*2.2+vec2(0.,uT*.004));
- float a3=fbm2(q*2.2+vec2(9.3,2.1)+a1*1.4);
- vec3 col=vec3(.02,.014,.06);
- float nm=.35+.65*smoothstep(.1,.75,p.x/W);
- col+=nm*vec3(.85,.25,.9)*pow(a2,3.)*1.3;
- col+=nm*vec3(.15,.55,1.)*pow(a3,3.6)*1.7;
- col+=vec3(.4,.22,1.)*a1*a1*.3;
- col+=nm*vec3(1.,.45,.55)*pow(fbm2(q*4.+a2*1.5+3.3),4.5)*1.1;
- // Stars, two depths.
- for(int l=0;l<3;l++){
-  float fl=float(l), sc=60.+fl*55.;
-  vec2 g=(q-dr*fl*.0004*H/H)*sc+fl*13.7; vec2 id=floor(g), f=fract(g)-.5;
-  float h=h21(id+fl*17.);
-  if(h>.9){vec2 o=vec2(h21(id+3.1),h21(id+7.7))-.5; float d=length(f-o*.6)*sc/H*H/sc;
-   float b=(h-.9)/.1, tw=.55+.45*sin(uT*(.8+2.5*h)+h*40.);
-   col+=mix(vec3(.75,.8,1.),vec3(1.,.85,.95),h21(id+1.3))*b*b*tw*smoothstep(.16,0.,length(f-o*.6))*(1.4-fl*.35);}
+ vec2 uv=(gl_FragCoord.xy-.5*uRes)/uRes.y;
+ float t=uT;
+ // Camera in low orbit, looking down toward the horizon; a slow sway like a station in orbit.
+ vec3 ro=vec3(0.,1.25,0.);
+ float pitch=.84+sin(t*.04)*.008, yaw=sin(t*.027)*.012;
+ vec3 f=normalize(vec3(sin(yaw),-sin(pitch),cos(pitch)));
+ vec3 r=normalize(cross(vec3(0.,1.,0.),f))*-1.;
+ r=normalize(vec3(f.z,0.,-f.x));
+ vec3 u=cross(f,r);
+ vec3 rd=normalize(f*1.05+r*(uv.x-.18)+u*(uv.y+.02));
+ // The sun sits just over the limb on the right.
+ vec3 S=normalize(vec3(.5,-.6,.66));
+ vec2 ta=sph(ro,rd,RA), tg=sph(ro,rd,1.);
+ bool hit=tg.x>0.;
+ vec3 col=vec3(0.);
+ if(!hit){
+  // Deep sky: Milky Way band with dust lanes and a dense field of tiny stars of different temperatures.
+  vec2 q=uv*vec2(1.,1.)+vec2(t*.0006,0.);
+  float bd=dot(q,normalize(vec2(-.42,1.)))-.18;
+  float band=exp(-bd*bd/.035);
+  float mw=fbm2(q*3.5+3.)*.7+fbm2(q*9.)*.3;
+  float dust=smoothstep(.45,.75,fbm2(q*5.5+vec2(7.,1.)));
+  col+=band*(mw*mw)*(1.-.75*dust)*vec3(.16,.12,.26)*1.3;
+  col+=band*band*vec3(.09,.06,.11)*.6;
+  for(int l=0;l<3;l++){
+   float fl=float(l),sc=140.+fl*120.;
+   vec2 g=q*sc+fl*31.7, id=floor(g), fr=fract(g)-.5;
+   float h=h21(id+fl*9.1);
+   float thr=.95-band*.1;
+   if(h>thr){
+    vec2 o=(vec2(h21(id+3.1),h21(id+7.7))-.5)*.7;
+    float d=length(fr-o);
+    float b=pow((h-thr)/(1.-thr),3.)*(1.6-fl*.4);
+    float tmp=h21(id+1.3);
+    vec3 sc3=tmp<.25?vec3(1.,.78,.6):tmp<.6?vec3(1.,.96,.92):vec3(.75,.82,1.);
+    col+=sc3*b*exp(-d*d*80.);
+   }
+  }
+  // Sun disc and glare.
+  float sd=dot(rd,S);
+  col+=vec3(1.,.97,.93)*smoothstep(.99985,.99993,sd)*40.;
  }
- // Ringed world.
- vec2 sp=vec2(.5*W,.2*H)+dr*.5; float sr=.075*H; vec2 rp=p-sp;
- float ca=cos(.32),sa=sin(.32); vec2 rr=vec2(ca*rp.x+sa*rp.y,-sa*rp.x+ca*rp.y);
- float e=length(vec2(rr.x,rr.y/.26))/sr;
- float ring=smoothstep(1.3,1.42,e)*smoothstep(2.35,2.2,e)*(.55+.45*sin(e*42.))*(1.-.6*smoothstep(1.75,1.85,e)*smoothstep(1.95,1.85,e));
- vec3 rc=vec3(.95,.82,.7)*(.35+.65*clamp(rr.x/sr*.3+.6,0.,1.));
- vec2 sd=rp/sr; float s2=dot(sd,sd);
- if(rr.y<0.) col=mix(col,rc,ring*.85);
- if(s2<1.){vec3 sn=vec3(sd.x,-sd.y,sqrt(1.-s2)); vec3 sb=rotX(sn,.3);
-  float bnd=.5+.5*sin(sb.y*16.+fbm3(sb*4.)*3.);
-  vec3 scl=mix(vec3(.85,.62,.45),vec3(1.,.9,.75),bnd);
-  float df=clamp(dot(sn,L),0.,1.);
-  float sh=1.-.7*step(abs(sd.y+.0),.0);
-  vec3 pc=scl*(.03+1.1*df)+vec3(.9,.7,.5)*pow(1.-sn.z,3.)*.3*df;
-  col=mix(col,pc,smoothstep(1.,.92,s2));}
- if(rr.y>=0.) col=mix(col,rc,ring*.85*(s2<1.?1.:1.));
- // Moon.
- vec2 mp=vec2(.63*W,.1*H)+dr*.6; float mr=.032*H; vec2 md=(p-mp)/mr; float m2=dot(md,md);
- if(m2<1.){vec3 mn=vec3(md.x,-md.y,sqrt(1.-m2)); float cr=fbm3(mn*5.+2.);
-  vec3 mc=vec3(.78,.76,.85)*(.65+.5*cr)*(.02+clamp(dot(mn,L),0.,1.));
-  col=mix(col,mc,smoothstep(1.,.85,m2));}
- // Giant planet.
- vec2 C=vec2(.78*W,1.55*H)+dr; float R=1.25*H;
- vec2 d=(p-C)/R; float r=length(d);
- if(r<1.){
-  float z=sqrt(1.-r*r); vec3 n=vec3(d.x,-d.y,z);
-  vec3 nr=rotY(rotX(n,.55),uT*.012);
-  float turb=fbm3(nr*3.+vec3(0.,0.,uT*.002));
-  float bands=.5+.5*sin(nr.y*11.+turb*4.5);
-  float tone=clamp(bands*.85+fbm3(nr*7.)*.45-.2,0.,1.);
-  vec3 sc=ramp(tone);
-  sc*=.75+.5*fbm3(nr*18.+3.);
-  sc=mix(sc,vec3(.3,.85,.95),smoothstep(.58,.72,fbm3(nr*2.5+11.))*.55);
-  vec3 sp0=normalize(vec3(.25,.15,.95)); float sdd=length(nr-sp0);
-  float sw=fbm3(nr*9.+5.);
-  sc=mix(sc,vec3(1.,.62,.72),smoothstep(.17,.05,sdd+sw*.05)*.75);
-  float cl=smoothstep(.56,.86,fbm3(nr*5.+vec3(uT*.01,0.,0.)));
-  sc=mix(sc,vec3(1.,.96,1.),cl*.3);
-  float df=dot(n,L), lit=smoothstep(-.12,.65,df);
-  vec3 pc=pow(sc,vec3(1.25))*(.03+1.1*lit);
-  pc+=vec3(1.,.35,.55)*.16*smoothstep(.22,0.,abs(df-.02));
-  float fres=pow(1.-z,2.5);
-  pc+=vec3(.55,.48,1.)*fres*(.15+1.3*clamp(df+.25,0.,1.));
-  col=mix(col,pc,smoothstep(1.,1.-2./R,r));
+ // Atmosphere: single scattering along the ray, violet Rayleigh plus forward Mie glow near the sun.
+ vec3 tr=vec3(1.);
+ if(ta.y>0.){
+  float t0=max(ta.x,0.), t1=hit?tg.x:ta.y, ds=(t1-t0)/8.;
+  vec3 ins=vec3(0.); float od=0.;
+  for(int i=0;i<8;i++){
+   vec3 p=ro+rd*(t0+ds*(float(i)+.5));
+   float hgt=length(p)-1.;
+   float dn=exp(-hgt/HS)*ds;
+   float sl=smoothstep(-.12,.18,dot(normalize(p),S));
+   od+=dn; ins+=dn*sl*exp(-od*4.);
+  }
+  float mu=dot(rd,S);
+  float pr=.75*(1.+mu*mu);
+  float g=.78, pm=(1.-g*g)/pow(1.+g*g-2.*g*mu,1.5)*.08;
+  col+=ins*(vec3(.38,.3,1.)*pr*9.+vec3(1.,.82,.9)*pm*9.);
+  tr=exp(-od*vec3(3.2,3.8,1.6));
  }
- vec2 dn=d/max(r,1e-4); float lf=clamp(dot(vec3(dn.x,-dn.y,0.),L)+.4,0.,1.2);
- float o=max(r-1.,0.)*R;
- col+=smoothstep(1.-2./R,1.,r)*(vec3(.7,.6,1.)*exp(-o/(.012*H))*lf*.9+vec3(.45,.32,1.)*exp(-o/(.09*H))*lf*.4);
- // Anamorphic flare where the light grazes the limb.
- float fa=-1.08; vec2 fp=C+vec2(cos(fa),sin(fa))*R;
- float pulse=.85+.15*sin(uT*1.1)*sin(uT*.27);
- vec2 fd=p-fp;
- col+=vec3(1.,.95,1.)*exp(-length(fd)/(.03*H))*.9*pulse;
- col+=vec3(.6,.55,1.)*exp(-length(fd)/(.16*H))*.35*pulse;
- col+=vec3(.5,.65,1.)*exp(-abs(fd.y)/(.005*H))*exp(-abs(fd.x)/(.3*W))*.55*pulse;
- // Text side scrim, gentle vignette and tone map.
- col*=1.-.6*smoothstep(.62,.0,p.x/W)*smoothstep(.15,.6,p.y/H);
- col*=1.-.35*pow(length((p/uRes-.5)*vec2(1.,1.4)),2.);
- col=1.-exp(-col*1.15);
- gl_FragColor=vec4(pow(col,vec3(.95)),1.);
-}`;
+ if(hit){
+  vec3 P=ro+rd*tg.x, n=normalize(P);
+  vec3 Q=rotX(P,-t*.0045);
+  float w=fbm4(Q*1.6);
+  float land=smoothstep(.5,.56,fbm(Q*2.2+w*1.2));
+  float rough=fbm4(Q*14.);
+  vec3 oc=vec3(.012,.018,.05);
+  vec3 lc=mix(vec3(.07,.055,.06),vec3(.11,.09,.08),rough);
+  vec3 sc=mix(oc,lc,land);
+  float cw=fbm4(Q*3.+vec3(t*.002,0.,0.));
+  float cn=fbm(Q*7.+cw*2.2+vec3(0.,0.,t*.003));
+  float cloud=smoothstep(.5,.78,cn)*(.55+.45*smoothstep(.35,.6,fbm4(Q*1.3+4.)));
+  float nd=dot(n,S), dl=smoothstep(-.16,.45,nd);
+  vec3 lit=vec3(1.,.95,.92)*7.;
+  vec3 gcol=sc*dl*lit;
+  vec3 rf=reflect(rd,n);
+  gcol+=vec3(1.,.85,.8)*pow(max(dot(rf,S),0.),80.)*(1.-land)*dl*12.;
+  vec3 moon=vec3(.32,.3,.62)*.24;
+  gcol+=sc*moon;
+  gcol=mix(gcol,vec3(.95,.93,1.)*dl*lit*.55+vec3(.75,.72,1.)*moon,cloud);
+  // City lights on the night side, faded with distance so they don't shimmer.
+  float night=smoothstep(.06,-.12,nd);
+  float fade=smoothstep(.75,.25,tg.x);
+  float city=pow(n3(Q*420.),14.)*smoothstep(.45,.7,fbm4(Q*9.+2.))*land*(1.-cloud*.9);
+  gcol+=vec3(1.,.66,.34)*city*night*fade*6.;
+  col=gcol*tr+col;
+ } else col=col*tr+col*0.;
+ // Lens glare from the sun, scrim behind the text, vignette, filmic tone map and a little grain.
+ float mu2=max(dot(rd,S),0.);
+ col+=vec3(1.,.9,.95)*(pow(mu2,600.)*3.+pow(mu2,60.)*.25+pow(mu2,8.)*.04);
+ vec2 sp=gl_FragCoord.xy/uRes;
+ col*=1.-.55*smoothstep(.6,0.,sp.x)*smoothstep(.85,.25,sp.y);
+ col*=1.-.4*pow(length((sp-.5)*vec2(1.,1.5)),2.2);
+ col=aces(col*1.1);
+ col=pow(col,vec3(1./1.9));
+ col+=(h21(gl_FragCoord.xy+fract(t)*100.)-.5)*.012;
+ gl_FragColor=vec4(col,1.);
+}
+`;
     const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return gl.getShaderParameter(s, gl.COMPILE_STATUS) ? s : (console.warn(gl.getShaderInfoLog(s)), null); };
     const v = sh(gl.VERTEX_SHADER, 'attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}'), f = sh(gl.FRAGMENT_SHADER, FS);
     if (!v || !f) return null;
@@ -2069,29 +2064,6 @@ const GLYPHS = {"playstation":"M8.984 2.596v17.547l3.915 1.261V6.688c0-.69.304-1
       navigator.mediaSession.setActionHandler('previoustrack', () => step(-1));
     } catch (e) {}
   }
-
-  /* ---------- Weather ---------- */
-  let pos = store.get('lastPos', [13.7563, 100.5018]); // Bangkok until the browser shares a location
-  let weatherLoaded = false;
-  if ('geolocation' in navigator) {
-    try {
-      navigator.geolocation.getCurrentPosition(p => {
-        pos = [p.coords.latitude, p.coords.longitude]; store.set('lastPos', pos);
-        weatherLoaded = false; loadWeather();
-      }, () => {}, { maximumAge: 600000, timeout: 15000 });
-    } catch (e) {}
-  }
-  const WMO = { 0: 'ฟ้าใส', 1: 'เมฆน้อย', 2: 'มีเมฆบางส่วน', 3: 'เมฆมาก', 45: 'หมอก', 48: 'หมอก', 51: 'ฝนปรอย', 53: 'ฝนปรอย', 55: 'ฝนปรอย', 61: 'ฝนเล็กน้อย', 63: 'ฝนปานกลาง', 65: 'ฝนหนัก', 80: 'ฝนซู่', 81: 'ฝนซู่', 82: 'ฝนซู่หนัก', 95: 'พายุฝน', 96: 'พายุฝน', 99: 'พายุฝน' };
-  async function loadWeather() {
-    weatherLoaded = true;
-    try {
-      const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${pos[0].toFixed(3)}&longitude=${pos[1].toFixed(3)}&current=temperature_2m,weather_code&timezone=auto`);
-      const j = await r.json();
-      $('#wTemp').textContent = Math.round(j.current.temperature_2m) + '°';
-      $('#wDesc').textContent = WMO[j.current.weather_code] || 'อากาศ';
-    } catch (e) { $('#wDesc').textContent = 'ไม่มีข้อมูล'; }
-  }
-  setTimeout(() => { if (!weatherLoaded) loadWeather(); }, 4000);
 
   /* ---------- Apps ---------- */
   const DEFAULT_APPS = [
