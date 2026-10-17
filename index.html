@@ -358,6 +358,17 @@ main { min-height: 0; position: relative; }
 .ov-bar b { flex: 1; font-family: var(--font-display); font-weight: 400; font-size: 1.2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* Sheet */
+.film.thai { background: #1a0d08; }
+.thai-art { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: .35rem; padding: 1rem 1.2rem 2.6rem;
+  background: radial-gradient(90% 120% at 70% 0%, rgb(255 200 110 / .55), transparent 60%), linear-gradient(135deg, #5b1408 0%, #9a2a12 45%, #2a0b1e 100%); }
+.thai-art::before { content: ''; position: absolute; inset: .55rem; border: 1px solid rgb(255 214 140 / .45); border-radius: calc(var(--r-md) - .3rem); }
+.thai-art span { font-family: var(--font-display); font-size: 1.7rem; line-height: 1.15; text-align: center; color: #ffe2a8; text-shadow: 0 2px 14px rgb(0 0 0 / .6), 0 0 22px rgb(255 190 90 / .35); }
+.thai-art small { position: relative; font-size: .78rem; letter-spacing: .04em; color: #ffd79a; opacity: .85; text-align: center; }
+.film.thai .meta b { display: none; }
+.tag-th { position: absolute; top: .75rem; left: .75rem; font-family: var(--font-mono); font-size: .68rem; letter-spacing: .08em; padding: .25rem .55rem; border-radius: 1rem; background: rgb(255 214 140 / .9); color: #3a1206; }
+.sheet-note { margin: 0; line-height: 1.6; color: #d9d3fb; }
+.sheet-note.muted { color: var(--muted); font-size: .9rem; }
+.thai-go { display: flex; gap: .6rem; flex-wrap: wrap; }
 .sheet-backdrop { position: fixed; inset: 0; background: rgb(3 2 10 / .7); display: grid; place-items: center; z-index: 90; padding: 1rem; backdrop-filter: blur(6px); }
 .sheet { width: min(38rem, 100%); max-height: 90%; overflow: auto; background: var(--panel-solid); border: 1px solid var(--line-strong); border-radius: var(--r-xl); padding: 1.75rem; display: flex; flex-direction: column; gap: 1rem; box-shadow: 0 30px 80px rgb(0 0 0 / .6); }
 .sheet h2 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: 1.6rem; }
@@ -1275,9 +1286,50 @@ const GLYPHS = {"playstation":"M8.984 2.596v17.547l3.915 1.261V6.688c0-.69.304-1
   const radioCard = (r, i) => `<button class="card station" data-radio="${i}"><span class="art" style="--g:${gradFor(r.id)}"><svg><use href="#i-radio"/></svg>${r.fav ? `<img class="poster" src="${esc(r.fav)}" alt="" loading="lazy">` : ''}</span>
       <span class="cap"><b>${esc(r.name)}</b><span>${esc(r.sub)}</span></span></button>`;
 
+  // Thai epics KK asked to lead the films row. They are copyrighted, so they open through legal routes:
+  // a SmartTube search for official uploads (played in-app, ad-free) or a search on the streaming services.
+  const THAI_FILMS = [
+    { t: 'สุริโยไทย', en: 'Suriyothai', y: 2544, sub: 'ม.จ.ชาตรีเฉลิม ยุคล', d: 'สมเด็จพระสุริโยทัยทรงช้างออกรบเคียงข้างพระมหาจักรพรรดิ ปกป้องกรุงศรีอยุธยาในสงครามกับหงสาวดี' },
+    { t: 'ตำนานสมเด็จพระนเรศวรมหาราช ภาค ๑ องค์ประกันหงสา', short: 'นเรศวร ๑ องค์ประกันหงสา', top: 'ตำนานสมเด็จพระนเรศวรมหาราช ภาค ๑', big: 'องค์ประกันหงสา', en: 'King Naresuan 1', y: 2550, sub: 'ภาค ๑', d: 'พระนเรศวรวัยเยาว์ต้องเสด็จไปเป็นองค์ประกันที่กรุงหงสาวดี' },
+    { t: 'ตำนานสมเด็จพระนเรศวรมหาราช ภาค ๒ ประกาศอิสรภาพ', short: 'นเรศวร ๒ ประกาศอิสรภาพ', top: 'ตำนานสมเด็จพระนเรศวรมหาราช ภาค ๒', big: 'ประกาศอิสรภาพ', en: 'King Naresuan 2', y: 2550, sub: 'ภาค ๒', d: 'พระนเรศวรเสด็จกลับกรุงศรีอยุธยา และทรงประกาศอิสรภาพจากหงสาวดี' },
+    { t: 'ตำนานสมเด็จพระนเรศวรมหาราช ภาค ๓ ยุทธนาวี', short: 'นเรศวร ๓ ยุทธนาวี', top: 'ตำนานสมเด็จพระนเรศวรมหาราช ภาค ๓', big: 'ยุทธนาวี', en: 'King Naresuan 3', y: 2554, sub: 'ภาค ๓', d: 'ศึกทางน้ำที่ทรงนำทัพป้องกันอาณาจักร' },
+    { t: 'ตำนานสมเด็จพระนเรศวรมหาราช ภาค ๔ ศึกนันทบุเรง', short: 'นเรศวร ๔ ศึกนันทบุเรง', top: 'ตำนานสมเด็จพระนเรศวรมหาราช ภาค ๔', big: 'ศึกนันทบุเรง', en: 'King Naresuan 4', y: 2554, sub: 'ภาค ๔', d: 'พระเจ้านันทบุเรงยกทัพใหญ่มาตีกรุงศรีอยุธยา' },
+    { t: 'ตำนานสมเด็จพระนเรศวรมหาราช ภาค ๕ ยุทธหัตถี', short: 'นเรศวร ๕ ยุทธหัตถี', top: 'ตำนานสมเด็จพระนเรศวรมหาราช ภาค ๕', big: 'ยุทธหัตถี', en: 'King Naresuan 5', y: 2557, sub: 'ภาค ๕', d: 'การกระทำยุทธหัตถีกับพระมหาอุปราชาที่หนองสาหร่าย' },
+    { t: 'ตำนานสมเด็จพระนเรศวรมหาราช ภาค ๖ อวสานหงสา', short: 'นเรศวร ๖ อวสานหงสา', top: 'ตำนานสมเด็จพระนเรศวรมหาราช ภาค ๖', big: 'อวสานหงสา', en: 'King Naresuan 6', y: 2558, sub: 'ภาค ๖', d: 'บทสรุปของมหากาพย์ สู่การสิ้นสุดอำนาจของหงสาวดี' }
+  ];
+  const thaiCard = (f, i) => `<button class="card film thai" data-thai="${i}"><span class="thai-art">${f.top ? `<small>${esc(f.top)}</small>` : ''}<span>${esc(f.big || f.t)}</span></span><span class="shade"></span>
+      <span class="tag-th">หนังไทย</span>
+      <span class="meta"><b>${esc(f.short || f.t)}</b><span>พ.ศ. ${f.y} · ${esc(f.sub)}</span></span></button>`;
+  function openThai(f) {
+    const wrap = document.createElement('div');
+    wrap.className = 'sheet-backdrop';
+    const q = encodeURIComponent(f.en);
+    wrap.innerHTML = `<div class="sheet" role="dialog" aria-label="${esc(f.t)}">
+        <h2>${esc(f.t)}</h2>
+        <p class="sheet-note">${esc(f.d)}</p>
+        <p class="sheet-note muted">หนังเรื่องนี้มีลิขสิทธิ์ จึงเปิดผ่านช่องทางที่ถูกต้อง ค้นใน SmartTube เพื่อหาคลิปจากช่องทางการ เล่นในแอปแบบไม่มีโฆษณา หรือเปิดในบริการสตรีมมิ่งที่คุณเป็นสมาชิก</p>
+        <div class="thai-go">
+          <button class="btn primary" data-thaitube><svg><use href="#i-play"/></svg>ค้นหาใน SmartTube</button>
+          <a class="btn" href="https://www.netflix.com/search?q=${q}" target="_blank" rel="noopener">Netflix</a>
+          <a class="btn" href="https://www.primevideo.com/search?phrase=${q}" target="_blank" rel="noopener">Prime Video</a>
+          <a class="btn" href="https://www.monomax.me" target="_blank" rel="noopener">MONOMAX</a>
+        </div>
+        <div class="sheet-actions"><button type="button" class="btn" data-x>ปิด</button></div>
+      </div>`;
+    document.body.append(wrap);
+    wrap.addEventListener('click', e => {
+      if (e.target === wrap || e.target.closest('[data-x]')) return wrap.remove();
+      if (e.target.closest('[data-thaitube]')) {
+        wrap.remove(); go('tube');
+        $('#tubeQ').value = f.t + ' เต็มเรื่อง';
+        $('#tubeForm').requestSubmit();
+      }
+    });
+  }
+
   function renderCatalogue() {
-    $('#homeFilms').innerHTML = ALL_FILMS.map(filmCard).join('');
-    $('#allFilms').innerHTML = ALL_FILMS.map(filmCard).slice(0, FILMS.length).join('');
+    $('#homeFilms').innerHTML = THAI_FILMS.map(thaiCard).join('') + ALL_FILMS.map(filmCard).join('');
+    $('#allFilms').innerHTML = THAI_FILMS.map(thaiCard).join('') + ALL_FILMS.map(filmCard).slice(0, FILMS.length).join('');
     $('#allDocs').innerHTML = ALL_FILMS.map(filmCard).slice(FILMS.length).join('');
     $('#homeServices').innerHTML = MOVIE_SERVICES.map(svcCard).join('');
     $('#allServices').innerHTML = MOVIE_SERVICES.map(svcCard).join('');
@@ -1922,6 +1974,7 @@ const GLYPHS = {"playstation":"M8.984 2.596v17.547l3.915 1.261V6.688c0-.69.304-1
   });
 
   document.addEventListener('click', e => {
+    const th = e.target.closest('[data-thai]'); if (th) { openThai(THAI_FILMS[+th.dataset.thai]); return; }
     const f = e.target.closest('[data-film]'); if (f) { const x = ALL_FILMS[+f.dataset.film]; openVideo(x.t, x.url); return; }
     const v = e.target.closest('[data-myvid]'); if (v) { const x = myVideos[+v.dataset.myvid]; openVideo(x.t, x.url); return; }
     if (e.target.closest('[data-tube]')) { go('tube'); return; }
