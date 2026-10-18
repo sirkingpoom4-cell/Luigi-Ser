@@ -1393,9 +1393,6 @@ const GLYPHS = {"playstation":"M8.984 2.596v17.547l3.915 1.261V6.688c0-.69.304-1
     if (!id) { const m = u.pathname.match(/\/(shorts|embed|live|v)\/([\w-]{6,})/); if (m) id = m[2]; }
     return id || list ? { id, list } : null;
   }
-  const embedSrc = (id, list) => id
-    ? 'https://www.youtube-nocookie.com/embed/' + encodeURIComponent(id) + '?autoplay=1&rel=0&playsinline=1&hl=th' + (list ? '&list=' + encodeURIComponent(list) : '')
-    : 'https://www.youtube-nocookie.com/embed/videoseries?autoplay=1&rel=0&list=' + encodeURIComponent(list);
 
   /* ---------- SmartTube: YouTube browser inside Tesaro ---------- */
   // The SmartTube app itself is an Android TV APK and cannot run in a browser. This rebuilds what it is used for:
@@ -1626,7 +1623,7 @@ const GLYPHS = {"playstation":"M8.984 2.596v17.547l3.915 1.261V6.688c0-.69.304-1
   const SB_CATS = ['sponsor', 'selfpromo', 'interaction', 'intro', 'outro', 'preview', 'music_offtopic'];
   const SB_NAMES = { sponsor: 'สปอนเซอร์', selfpromo: 'โปรโมตตัวเอง', interaction: 'ขอกดไลก์/ติดตาม', intro: 'อินโทร', outro: 'ช่วงจบ', preview: 'ตัวอย่าง', music_offtopic: 'ช่วงไม่มีเพลง' };
   const SPEEDS = [1, 1.25, 1.5, 1.75, 2, 0.75];
-  let ytApi = null, ytPlayer = null, hls = null, sbSegs = [], sbState = 'off', sbTimer = 0, tubeMode = '', streamReady = false, tubeQueue = { list: [], idx: 0 }, playSeq = 0;
+  let ytPlayer = null, hls = null, sbSegs = [], sbState = 'off', sbTimer = 0, tubeMode = '', streamReady = false, tubeQueue = { list: [], idx: 0 }, playSeq = 0;
 
   // SponsorBlock: the official API (privacy-preserving hash prefix lookup) raced against Piped's proxies of it.
   async function sha256Prefix(id) {
@@ -1738,7 +1735,7 @@ const GLYPHS = {"playstation":"M8.984 2.596v17.547l3.915 1.261V6.688c0-.69.304-1
     const mirrors = PIPED.map(h => ({ key: 'p:' + h, run: () => pipedStreams(h, v.id) }))
       .concat([...INVIDIOUS, ...extraInvidious].map(h => ({ key: 'i:' + h, run: () => invStreams(h, v.id) })))
       .sort((a, b) => (b.key === last) - (a.key === last));
-    const deadline = Date.now() + 30000;
+    const deadline = Date.now() + 14000;
     for await (const r of inOrder(mirrors.map(m => m.run().then(list => ({ key: m.key, list }))))) {
       for (const c of r.list.slice(0, 2)) {
         if (seq !== playSeq || Date.now() > deadline) return false;
@@ -1749,39 +1746,46 @@ const GLYPHS = {"playstation":"M8.984 2.596v17.547l3.915 1.261V6.688c0-.69.304-1
   }
   let tubeQuality = '';
 
-  function loadYTApi() {
-    if (window.YT && YT.Player) return Promise.resolve();
-    if (ytApi) return ytApi;
-    ytApi = new Promise((res, rej) => {
-      const prev = window.onYouTubeIframeAPIReady;
-      window.onYouTubeIframeAPIReady = () => { if (prev) prev(); res(); };
-      const s = document.createElement('script');
-      s.src = 'https://www.youtube.com/iframe_api'; s.onerror = rej;
-      document.head.append(s);
-      setTimeout(() => rej(new Error('timeout')), 7000);
-    });
-    ytApi.catch(() => { ytApi = null; });
-    return ytApi;
+  // YouTube's embed player, driven over its own postMessage protocol (the one the IFrame API script uses), so no
+  // extra script has to load. The player reports its playhead several times a second; SponsorBlock skipping runs on it.
+  function ytEmbed(host, v, startAt, onEnd) {
+    const p = new URLSearchParams({ enablejsapi: 1, autoplay: 1, rel: 0, playsinline: 1, hl: 'th', modestbranding: 1, iv_load_policy: 3, start: Math.floor(startAt) });
+    if (location.origin && location.origin !== 'null') p.set('origin', location.origin);
+    if (v.list) p.set('list', v.list);
+    const f = document.createElement('iframe');
+    f.src = 'https://www.youtube.com/embed/' + (v.id ? encodeURIComponent(v.id) : 'videoseries') + '?' + p;
+    f.allow = 'autoplay; encrypted-media; fullscreen; picture-in-picture'; f.allowFullscreen = true;
+    host.append(f);
+    let time = startAt, at = performance.now(), state = -1, rate = 1, heard = false;
+    const post = o => { try { f.contentWindow.postMessage(JSON.stringify(Object.assign(o, { id: 1, channel: 'widget' })), '*'); } catch (e) {} };
+    const send = (func, args = []) => post({ event: 'command', func, args });
+    const setState = n => { if (n === 0 && state !== 0) onEnd(); state = n; at = performance.now(); };
+    const onMsg = e => {
+      if (e.source !== f.contentWindow) return;
+      let d; try { d = typeof e.data === 'string' ? JSON.parse(e.data) : e.data; } catch (err) { return; }
+      if (!d || !d.event) return;
+      if (!heard) { heard = true; send('setPlaybackRate', [settings.speed || 1]); send('playVideo'); }
+      if (d.event === 'onStateChange' && typeof d.info === 'number') setState(d.info);
+      const info = d.info && typeof d.info === 'object' ? d.info : {};
+      if (typeof info.playbackRate === 'number') rate = info.playbackRate;
+      if (typeof info.playerState === 'number' && info.playerState !== state) setState(info.playerState);
+      if (typeof info.currentTime === 'number') { time = info.currentTime; at = performance.now(); }
+    };
+    addEventListener('message', onMsg);
+    // Keep knocking until the player answers; it ignores 'listening' sent before it has loaded.
+    const knock = setInterval(() => { if (heard) clearInterval(knock); else post({ event: 'listening' }); }, 400);
+    f.addEventListener('load', () => post({ event: 'listening' }));
+    return {
+      getCurrentTime: () => time + (state === 1 ? (performance.now() - at) / 1000 * rate : 0),
+      seekTo: t => { send('seekTo', [t, true]); time = t; at = performance.now(); },
+      setPlaybackRate: r => send('setPlaybackRate', [r]),
+      destroy: () => { clearInterval(knock); removeEventListener('message', onMsg); f.remove(); }
+    };
   }
-  async function playEmbed(v, seq, startAt = 0) {
-    ovVideo.hidden = true; ovTube.hidden = false;
-    ovTube.innerHTML = '<div id="ytHost"></div>';
-    try {
-      await loadYTApi();
-      if (seq !== playSeq) return;
-      ytPlayer = new YT.Player('ytHost', {
-        host: 'https://www.youtube-nocookie.com', videoId: v.id, width: '100%', height: '100%',
-        playerVars: Object.assign({ autoplay: 1, rel: 0, playsinline: 1, hl: 'th', modestbranding: 1, iv_load_policy: 3, start: Math.floor(startAt) }, v.list ? { list: v.list } : {}),
-        events: {
-          onReady: e => { try { e.target.setPlaybackRate(settings.speed || 1); e.target.playVideo(); } catch (err) {} },
-          onStateChange: e => { if (e.data === 0) playQueue(tubeQueue.idx + 1); }
-        }
-      });
-      sbTimer = setInterval(sbCheck, 500);
-    } catch (e) {
-      if (seq !== playSeq) return;
-      ovTube.innerHTML = `<iframe src="${embedSrc(v.id, v.list)}" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen></iframe>`;
-    }
+  function playEmbed(v, seq, startAt = 0) {
+    ovVideo.hidden = true; ovTube.hidden = false; ovTube.innerHTML = '';
+    ytPlayer = ytEmbed(ovTube, v, startAt, () => { if (seq === playSeq) playQueue(tubeQueue.idx + 1); });
+    clearInterval(sbTimer); sbTimer = setInterval(sbCheck, 250);
   }
   function stopTube() {
     clearInterval(sbTimer);
